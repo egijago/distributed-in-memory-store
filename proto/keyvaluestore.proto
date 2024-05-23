@@ -1,0 +1,25 @@
+syntax = "proto3";
+option go_package = "local/keyvaluestore";
+package keyvaluestore;
+
+service KeyValueStore {
+  rpc Set (SetRequest) returns (SetResponse) {}
+  rpc Get (GetRequest) returns (GetResponse) {}
+}
+
+message SetRequest {
+  string key = 1;
+  string value = 2;
+}
+
+message SetResponse {
+  string status = 1;
+}
+
+message GetRequest {
+  string key = 1;
+}
+
+message GetResponse {
+  string value = 1;
+}
