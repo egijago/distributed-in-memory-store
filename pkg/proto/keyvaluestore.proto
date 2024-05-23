@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "local/keyvaluestore";
+option go_package = "pkg/proto/auto-generated";
 package keyvaluestore;
 
 service KeyValueStore {
