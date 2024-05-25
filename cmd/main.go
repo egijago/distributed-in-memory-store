@@ -1,9 +1,10 @@
 package main
 
 import (
-	raft "if3230-tubes-williamjeffersonclinton/internal/service"
 	dto "if3230-tubes-williamjeffersonclinton/internal/dto"
+	raft "if3230-tubes-williamjeffersonclinton/internal/service"
 	"net/rpc"
+	"os"
 )
 
 func main() {
@@ -18,34 +19,15 @@ func main() {
 	// 	log.Fatalf("failed to serve: %v", err)
 	// }
 
-	// var wg sync.WaitGroup
-
-    // wg.Add(1)
-    // go func() {
-    //     defer wg.Done()
-    //     err := raft.NewRaftNode(nil, dto.Address{"localhost", "8000"}, nil)
-    //     if err != nil {
-    //         log.Fatalf("Failed to start Raft node on port 8000: %+v", err)
-    //     }
-    // }()	
-
-    // // Start the second Raft node, specifying the address of the first node
-    // wg.Add(1)
-    // go func() {
-    //     defer wg.Done()
-    //     err := raft.NewRaftNode(nil, dto.Address{"localhost", "8001"}, &dto.Address{"localhost", "8000"})
-    //     if err != nil {
-    //         log.Fatalf("Failed to start Raft node on port 8001: %+v", err)
-    //     }
-    // }()
+	args := os.Args
 
 	rpc.HandleHTTP()
-	raft.NewRaftNode(nil, dto.Address{"localhost", "8000"}, nil)
-	raft.NewRaftNode(nil, dto.Address{"localhost", "8001"}, &dto.Address{"localhost", "8000"})
-	// raft.NewRaftNode(nil, raft.Address{"localhost", "8002"}, &raft.Address{"localhost", "8000"})
-
-	// node1.InitializeAsLeader()
+	if len(args) <= 2 {
+		raft.NewRaftNode(nil, dto.Address{IP: "localhost", Port: args[1]}, nil)
+	} else {
+		raft.NewRaftNode(nil, dto.Address{IP: "localhost", Port: args[1]}, &dto.Address{IP: "localhost", Port: args[2]})
+	}
 
 	// Sleep to keep the main function running
-    select {}
+	select {}
 }
