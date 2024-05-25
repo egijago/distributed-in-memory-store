@@ -6,22 +6,22 @@ type Address struct {
 }
 
 type ApplyMembershipArgs struct {
-    ContactAddr Address
+	ContactAddr Address
 }
 
 type ApplyMembershipReply struct {
-    Status          string
-    Address         Address
-    Log             []string
-    ClusterAddrList []Address
+	Success         bool
+	Address         Address
+	Log             []string
+	ClusterAddrList []Address
 }
 
 type HeartbeatArgs struct {
-    LeaderAddr Address
-    Term       int
+	LeaderAddr Address
+	Term       int
 }
 
 type HeartbeatReply struct {
-    Success bool
-    Term    int
+	Success bool
+	Term    int
 }
