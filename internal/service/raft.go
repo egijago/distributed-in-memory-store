@@ -18,7 +18,7 @@ type RaftNode struct {
 	RPCTimeout         time.Duration
 	NodeType           int
 	Address            dto.Address
-	Log                []string
+	Log                []dto.LogEntry
 	Application        interface{}
 	ElectionTerm       int
 	ClusterAddrList    []dto.Address
@@ -32,6 +32,10 @@ type RaftInterface interface {
 	TryToApplyMembership(contactAddr dto.Address)
 }
 
+func (node *RaftNode) AppendEntries(entries ...dto.LogEntry) {
+	node.Log = append(node.Log, entries...)
+}
+
 func NewRaftNode(application interface{}, addr dto.Address, contactAddr *dto.Address) *RaftNode {
 	node := &RaftNode{
 		HeartbeatInterval:  1 * time.Second,
@@ -40,7 +44,7 @@ func NewRaftNode(application interface{}, addr dto.Address, contactAddr *dto.Add
 		RPCTimeout:         500 * time.Millisecond,
 		NodeType:           constants.NODE_TYPE.FOLLOWER,
 		Address:            addr,
-		Log:                make([]string, 0),
+		Log:                make([]dto.LogEntry, 0),
 		Application:        application,
 		ElectionTerm:       0,
 		ClusterAddrList:    make([]dto.Address, 0),
@@ -143,7 +147,7 @@ func (node *RaftNode) ApplyMembership(args dto.ApplyMembershipArgs, reply *dto.A
 
 	node.ClusterAddrList = append(node.ClusterAddrList, args.ContactAddr)
 	reply.Success = true
-	reply.Log = []string{"Successfully become member of Port: " + node.Address.Port}
+	reply.Log = []dto.LogEntry{}
 	reply.ClusterAddrList = []dto.Address{}
 	reply.Address = node.Address
 
