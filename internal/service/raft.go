@@ -60,6 +60,14 @@ func (n *RaftNode) AppendEntries(req *dto.AppendEntriesRequest) *dto.AppendEntri
         entries[i] = *entry
     }
 
+	// Leader Heartbeat (Empty Entries)
+	if (len(entries) == 0) {
+		return &dto.AppendEntriesResponse{
+            Term:    n.CurrentTerm,
+            Success: true,
+        }
+	}
+
     // If the log is empty or the previous log entry matches, append new entries
     if (len(n.Log) == 0 || (int(req.PrevLogIndex) < len(n.Log) && n.Log[req.PrevLogIndex].Term == req.PrevLogTerm)) {
         n.Log = append(n.Log[:req.PrevLogIndex+1], entries...)
