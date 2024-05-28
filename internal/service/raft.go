@@ -60,18 +60,8 @@ func (n *RaftNode) AppendEntries(req *dto.AppendEntriesRequest) *dto.AppendEntri
         entries[i] = *entry
     }
 
-    // If the log is empty, simply append the new entries
-    if len(n.Log) == 0 {
-        n.Log = entries
-        return &dto.AppendEntriesResponse{
-            Term:    n.CurrentTerm,
-            Success: true,
-        }
-    }
-
-    // Check if the previous log entry matches
-    if int(req.PrevLogIndex) < len(n.Log) && n.Log[req.PrevLogIndex].Term == req.PrevLogTerm {
-        // Append new entries to the log
+    // If the log is empty or the previous log entry matches, append new entries
+    if (len(n.Log) == 0 || (int(req.PrevLogIndex) < len(n.Log) && n.Log[req.PrevLogIndex].Term == req.PrevLogTerm)) {
         n.Log = append(n.Log[:req.PrevLogIndex+1], entries...)
         return &dto.AppendEntriesResponse{
             Term:    n.CurrentTerm,
@@ -79,10 +69,29 @@ func (n *RaftNode) AppendEntries(req *dto.AppendEntriesRequest) *dto.AppendEntri
         }
     }
 
-    return &dto.AppendEntriesResponse{
-        Term:    n.CurrentTerm,
-        Success: false,
-    }
+    // Search for a consistent log entry
+	for i := req.PrevLogIndex - 1; i >= 0; i-- {
+		if len(n.Log) <= int(i) {
+			break
+		}
+		if n.Log[i].Term == req.PrevLogTerm && n.Log[i].Index == req.PrevLogIndex {
+			// Found a consistent entry, append new entries after this position
+			n.Log = n.Log[:i+1] // Keep entries up to i (inclusive)
+
+			// Append new entries
+			n.Log = append(n.Log, entries...)
+			return &dto.AppendEntriesResponse{
+				Term:    n.CurrentTerm,
+				Success: true,
+			}
+		}
+	}
+
+	// Leader should repeat with lower index
+	return &dto.AppendEntriesResponse{
+		Term:    n.CurrentTerm,
+		Success: false,
+	}
 }
 
 func NewRaftNode(application interface{}, addr dto.Address, contactAddr *dto.Address) *RaftNode {

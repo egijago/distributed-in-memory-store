@@ -59,18 +59,16 @@ func testAppendEntries() {
 	args := os.Args
 	node := raft.NewRaftNode(nil, dto.Address{IP: "localhost", Port: args[1]}, nil)
 
-	// Initial log entries when the Raft node is created
-	fmt.Println("Initial log entries:")
-	if len(node.Log) == 0 {
-		fmt.Println("Log is empty")
-	} else {
-		for _, entry := range node.Log {
-			fmt.Printf("Index: %d, Term: %d, Data: %s\n", entry.Index, entry.Term, entry.Data)
-		}
+	initialEntries := []dto.LogEntry{
+		{Index: 1, Term: 1, Data: "X entry"},
+		{Index: 2, Term: 2, Data: "Y entry"},
 	}
 
+	// Append the initial entries to the log
+	node.Log = append(node.Log, initialEntries...)
+
 	logEntries := []dto.LogEntry{
-		{Index: 3, Term: 2, Data: "Other entry"},
+		{Index: 3, Term: 1, Data: "Other entry"},
 	}
 
 	entries := make([]*dto.LogEntry, len(logEntries))
@@ -82,31 +80,17 @@ func testAppendEntries() {
 		Term:         2,
 		LeaderId:     1,
 		PrevLogIndex: 1,
-		PrevLogTerm:  2,
+		PrevLogTerm:  1,
 		Entries:      entries,
 		LeaderCommit: 2,
 	}
 
 	resp := node.AppendEntries(req)
 
-	// Display the response
+	// Response
 	fmt.Printf("AppendEntries response: Term=%d, Success=%v\n", resp.Term, resp.Success)
 
-	req2 := &dto.AppendEntriesRequest{
-		Term:         3,
-		LeaderId:     1,
-		PrevLogIndex: 1,
-		PrevLogTerm:  2,
-		Entries:      entries,
-		LeaderCommit: 2,
-	}
-
-	resp2 := node.AppendEntries(req2)
-
-	// Display the response
-	fmt.Printf("AppendEntries response: Term=%d, Success=%v\n", resp2.Term, resp2.Success)
-
-	// Display the updated log
+	// Updated Log
 	fmt.Println("Updated log entries:")
 	for _, entry := range node.Log {
 		fmt.Printf("Index: %d, Term: %d, Data: %s\n", entry.Index, entry.Term, entry.Data)
