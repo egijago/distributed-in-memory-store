@@ -1,5 +1,12 @@
 package dto
 
+import (
+	keyvaluestore "if3230-tubes-williamjeffersonclinton/pkg/proto/auto-generated"
+)
+
+type LogEntry = keyvaluestore.LogEntry
+
+
 type Address struct {
 	IP   string
 	Port string
@@ -12,7 +19,7 @@ type ApplyMembershipArgs struct {
 type ApplyMembershipReply struct {
 	Success         bool
 	Address         Address
-	Log             []string
+	Log             []LogEntry
 	ClusterAddrList []Address
 }
 
@@ -25,3 +32,8 @@ type HeartbeatReply struct {
 	Success bool
 	Term    int
 }
+
+type AppendEntriesRequest = keyvaluestore.AppendEntriesRequest
+
+
+type AppendEntriesResponse = keyvaluestore.AppendEntriesResponse
