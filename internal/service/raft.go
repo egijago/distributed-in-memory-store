@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/rpc"
+	"sync"
 	"time"
 )
 
@@ -26,14 +27,62 @@ type RaftNode struct {
 	HeartbeatThread    *time.Ticker
 	HeartbeatTimeout   *time.Ticker
 	LastHeartbeat      time.Time
+	Mu				   sync.Mutex
+	CurrentTerm		   int64
 }
 
 type RaftInterface interface {
 	TryToApplyMembership(contactAddr dto.Address)
 }
 
-func (node *RaftNode) AppendEntries(entries ...dto.LogEntry) {
-	node.Log = append(node.Log, entries...)
+// func (node *RaftNode) AppendEntries(entries ...dto.LogEntry) {
+// 	node.Log = append(node.Log, entries...)
+// }
+
+func (n *RaftNode) AppendEntries(req *dto.AppendEntriesRequest) *dto.AppendEntriesResponse {
+    n.Mu.Lock()
+    defer n.Mu.Unlock()
+
+    // Check if the request term is greater than the current term
+    if req.Term < n.CurrentTerm {
+        return &dto.AppendEntriesResponse{
+            Term:    n.CurrentTerm,
+            Success: false,
+        }
+    }
+
+    // Update the current term
+    n.CurrentTerm = req.Term
+
+    // Convert []*auto_generated.LogEntry to []auto_generated.LogEntry
+    entries := make([]dto.LogEntry, len(req.Entries))
+    for i, entry := range req.Entries {
+        entries[i] = *entry
+    }
+
+    // If the log is empty, simply append the new entries
+    if len(n.Log) == 0 {
+        n.Log = entries
+        return &dto.AppendEntriesResponse{
+            Term:    n.CurrentTerm,
+            Success: true,
+        }
+    }
+
+    // Check if the previous log entry matches
+    if int(req.PrevLogIndex) < len(n.Log) && n.Log[req.PrevLogIndex].Term == req.PrevLogTerm {
+        // Append new entries to the log
+        n.Log = append(n.Log[:req.PrevLogIndex+1], entries...)
+        return &dto.AppendEntriesResponse{
+            Term:    n.CurrentTerm,
+            Success: true,
+        }
+    }
+
+    return &dto.AppendEntriesResponse{
+        Term:    n.CurrentTerm,
+        Success: false,
+    }
 }
 
 func NewRaftNode(application interface{}, addr dto.Address, contactAddr *dto.Address) *RaftNode {
