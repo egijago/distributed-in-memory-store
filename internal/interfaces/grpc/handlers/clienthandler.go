@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"context"
+	dtos "if3230-tubes-williamjeffersonclinton/internal/domain/dtos"
+	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
 
-	dtos "github.com/melvinkj/raft-consensus/internal/domain/dtos"
-	pb "github.com/melvinkj/raft-consensus/internal/pb/proto"
+	"context"
 )
 
 func (s *GrpcHandler) Ping(ctx context.Context, req *pb.ClientPingRequest) (*pb.ClientPingResponse, error) {

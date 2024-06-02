@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/melvinkj/raft-consensus/internal/domain/entities"
+	"if3230-tubes-williamjeffersonclinton/internal/domain/entities"
 )
 
 

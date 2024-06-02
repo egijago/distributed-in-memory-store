@@ -1,11 +1,11 @@
 package handlers
 
 import (
+	"if3230-tubes-williamjeffersonclinton/internal/domain/dtos"
+	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
+	
 	"context"
-
-	"github.com/melvinkj/raft-consensus/internal/domain/dtos"
-	entity "github.com/melvinkj/raft-consensus/internal/domain/entities"
-	pb "github.com/melvinkj/raft-consensus/internal/pb/proto"
 )
 
 func (s *GrpcHandler) AppendEntries(ctx context.Context, req *pb.RaftAppendEntriesRequest) (*pb.RaftAppendEntriesResponse, error) {

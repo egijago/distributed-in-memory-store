@@ -1,10 +1,10 @@
 package services
 
 import (
-	"github.com/melvinkj/raft-consensus/internal/domain/entities"
-	"github.com/melvinkj/raft-consensus/internal/domain/repositories"
-	"github.com/melvinkj/raft-consensus/internal/domain/dtos"
-	// "github.com/melvinkj/raft-consensus/internal/utils"
+	"if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+	"if3230-tubes-williamjeffersonclinton/internal/domain/repository"
+	"if3230-tubes-williamjeffersonclinton/internal/domain/dtos"
+	// "if3230-tubes-williamjeffersonclinton/internal/utils"
 )
 
 type ClientService struct {
@@ -123,8 +123,6 @@ func (k *ClientService) Append(request dtos.ClientAppendRequest) (response *dtos
 		Success: true,
 	}
 }
-
-
 
 
 func (k *ClientService) Strln(request dtos.ClientStrlnRequest) (response *dtos.ClientStrlnResponse) {

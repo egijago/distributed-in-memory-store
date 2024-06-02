@@ -1,6 +1,8 @@
 package entity
 
-import "strings"
+import (
+	"strings"
+)
 
 type Log struct {
 	Index int

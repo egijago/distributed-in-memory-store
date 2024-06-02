@@ -1,12 +1,12 @@
 package clients
 
 import (
+	"if3230-tubes-williamjeffersonclinton/internal/domain/dtos"
+	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
+	
 	"context"
 	"log"
-
-	"github.com/melvinkj/raft-consensus/internal/domain/dtos"
-	entity "github.com/melvinkj/raft-consensus/internal/domain/entities"
-	pb "github.com/melvinkj/raft-consensus/internal/pb/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

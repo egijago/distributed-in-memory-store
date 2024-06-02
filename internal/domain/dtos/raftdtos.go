@@ -1,6 +1,8 @@
 package dtos
 
-import entity "github.com/melvinkj/raft-consensus/internal/domain/entities"
+import (
+	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+)
 
 type RaftAppendEntriesRequest struct {
 	Term         int

@@ -1,18 +1,15 @@
 package services
 
 import (
-
+	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+	repository "if3230-tubes-williamjeffersonclinton/internal/domain/repository"
+	"if3230-tubes-williamjeffersonclinton/internal/domain/clients"
+	"if3230-tubes-williamjeffersonclinton/internal/domain/dtos"
+	"if3230-tubes-williamjeffersonclinton/internal/utils"
+	
 	"sync"
-
-	entity "github.com/melvinkj/raft-consensus/internal/domain/entities"
-	repository "github.com/melvinkj/raft-consensus/internal/domain/repositories"
-	"github.com/melvinkj/raft-consensus/internal/domain/clients"
 	"context"
-
 	"time"
-
-	"github.com/melvinkj/raft-consensus/internal/domain/dtos"
-	"github.com/melvinkj/raft-consensus/internal/utils"
 )
 
 const NO_VOTE = -1

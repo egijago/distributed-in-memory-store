@@ -1,19 +1,18 @@
 package main
 
 import (
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+	repository "if3230-tubes-williamjeffersonclinton/internal/domain/repository"
+	"if3230-tubes-williamjeffersonclinton/internal/domain/services"
+	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
+	"if3230-tubes-williamjeffersonclinton/internal/interfaces/grpc/handlers"
+
 	"context"
 	"flag"
 	"log"
 	"net"
 	"net/http"
-
-	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	entity "github.com/melvinkj/raft-consensus/internal/domain/entities"
-	repository "github.com/melvinkj/raft-consensus/internal/domain/repositories"
-	"github.com/melvinkj/raft-consensus/internal/domain/services"
-	pb "github.com/melvinkj/raft-consensus/internal/pb/proto"
-
-	"github.com/melvinkj/raft-consensus/internal/interfaces/grpc/handlers"
 	"google.golang.org/grpc"
 )
 
@@ -25,7 +24,6 @@ func requestLogger(ctx context.Context, req interface{}, info *grpc.UnaryServerI
 }
 
 func main() {
-
 	/* Parse argument(s) */
 	grpcPort := flag.String("grpc_port", "", "gRPC port")
 	masterPort := flag.String("master_port", "", "Master port")
@@ -84,5 +82,4 @@ func main() {
 	if err := httpServer.ListenAndServe(); err != nil {
 		log.Fatalf("failed to serve gRPC-Web: %v", err)
 	}
-
 }

@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	pb "github.com/melvinkj/raft-consensus/internal/pb/proto"
-	"github.com/melvinkj/raft-consensus/internal/domain/services"
+	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
+	"if3230-tubes-williamjeffersonclinton/internal/domain/services"
 )
 
 type GrpcHandler struct {
