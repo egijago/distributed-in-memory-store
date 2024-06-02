@@ -1,28 +1,27 @@
 package repository
 
 import (
-	"if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
 )
-
 
 type LogRepositoryInterface interface {
 	Append(entity.Log)
 	Get(int) (entity.Log, bool)
 	Delete(int)
 	GetLastLog() (entity.Log, bool)
-	FindLogIndex(int) (int)
+	FindLogIndex(int) int
 	DeleteLogsFromIndex(int)
 }
 
 type LogRepository struct {
 	lastIndex int
-	buffer map[int] entity.Log
+	buffer    map[int]entity.Log
 }
 
 func NewLogRepository() *LogRepository {
 	return &LogRepository{
 		lastIndex: 0,
-		buffer: make(map[int] entity.Log),
+		buffer:    make(map[int]entity.Log),
 	}
 }
 
@@ -41,7 +40,7 @@ func (l *LogRepository) Delete(key int) {
 }
 
 func (l *LogRepository) GetLastIndex() int {
-    return l.lastIndex
+	return l.lastIndex
 }
 
 func (l *LogRepository) GetLastLog() (entity.Log, bool) {
@@ -50,16 +49,16 @@ func (l *LogRepository) GetLastLog() (entity.Log, bool) {
 }
 
 func (repo *LogRepository) FindLogIndex(index int) int {
-    log, exists := repo.buffer[index]
-    if !exists {
-        return -1
-    }
-    return log.Index
+	log, exists := repo.buffer[index]
+	if !exists {
+		return -1
+	}
+	return log.Index
 }
 
 func (repo *LogRepository) DeleteLogsFromIndex(startIndex int) {
-    for i := startIndex; i <= repo.lastIndex; i++ {
-        delete(repo.buffer, i)
-    }
-    repo.lastIndex = startIndex - 1
+	for i := startIndex; i <= repo.lastIndex; i++ {
+		delete(repo.buffer, i)
+	}
+	repo.lastIndex = startIndex - 1
 }

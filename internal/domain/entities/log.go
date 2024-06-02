@@ -5,7 +5,7 @@ import (
 )
 
 type Log struct {
-	Index int
+	Index   int
 	Command string
 	Term    int
 }
@@ -15,9 +15,9 @@ func (l *Log) GetKeyValue() (string, string) {
 	key := words[1]
 
 	value := ""
-	if (len(words) > 2) {
+	if len(words) > 2 {
 		value = words[2]
-	} 
+	}
 
 	return key, value
 }

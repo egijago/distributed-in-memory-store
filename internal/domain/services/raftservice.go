@@ -1,14 +1,14 @@
 package services
 
 import (
-	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
-	repository "if3230-tubes-williamjeffersonclinton/internal/domain/repository"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/clients"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/dtos"
+	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+	repository "if3230-tubes-williamjeffersonclinton/internal/domain/repository"
 	"if3230-tubes-williamjeffersonclinton/internal/utils"
-	
-	"sync"
+
 	"context"
+	"sync"
 	"time"
 )
 
@@ -203,7 +203,7 @@ func (k *RaftService) RequestVote(request dtos.RaftRequestVoteRequest) (response
 func (k *RaftService) ApplyMembership(request dtos.RaftApplyMembershipRequest) (response *dtos.RaftApplyMembershipResponse) {
 	utils.LogInfo("[MEMBERSHIP] getting membership request from ", request.Address.String())
 	utils.LogInfo("[MEMBERSHIP] membership granted to ", request.Address.String())
-	
+
 	k.Members = append(k.Members, *clients.NewRaftClient(request.Address))
 
 	memberAddresses := []entity.Address{}
@@ -213,7 +213,6 @@ func (k *RaftService) ApplyMembership(request dtos.RaftApplyMembershipRequest) (
 		memberAddresses = append(memberAddresses, member.Address)
 	}
 	utils.Print("\n")
-	
 
 	return &dtos.RaftApplyMembershipResponse{
 		Id:      k.Id,
@@ -225,17 +224,17 @@ func (k *RaftService) ApplyMembership(request dtos.RaftApplyMembershipRequest) (
 
 func (k *RaftService) InitializeAsLeader() {
 	k.IsLeader = true
-	go func () {
+	go func() {
 		for {
-		k.PropagateEntries()
-		time.Sleep(1000 * time.Millisecond)
+			k.PropagateEntries()
+			time.Sleep(1000 * time.Millisecond)
 		}
 	}()
 }
 
 func (k *RaftService) PropagateEntries() {
 	var wg sync.WaitGroup
-	countAgree := 0 
+	countAgree := 0
 	var mutex sync.Mutex
 	for _, member := range k.Members {
 		wg.Add(1)
@@ -243,11 +242,11 @@ func (k *RaftService) PropagateEntries() {
 			defer wg.Done()
 
 			resp, err := member.AppendEntries(context.Background(), dtos.RaftAppendEntriesRequest{
-				Term: k.CurrentTerm,
-				LeaderId: k.Id,
+				Term:         k.CurrentTerm,
+				LeaderId:     k.Id,
 				PrevLogIndex: 0,
-				PrevLogTerm: 0,
-				Entries: []entity.Log{},
+				PrevLogTerm:  0,
+				Entries:      []entity.Log{},
 				LeaderCommit: k.CommitIndex,
 			})
 
@@ -258,12 +257,12 @@ func (k *RaftService) PropagateEntries() {
 			if resp.Success {
 				mutex.Lock()
 				countAgree++
-				mutex.Unlock() 
+				mutex.Unlock()
 			}
 		}(member)
 	}
 	wg.Wait()
-	utils.Println("countAgree: ", countAgree)	
+	utils.Println("countAgree: ", countAgree)
 	// if countAgree > len(k.Members)/2 {
 	// 	k.CommitIndex++
 	// }

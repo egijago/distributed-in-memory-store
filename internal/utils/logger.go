@@ -1,9 +1,9 @@
 package utils
 
 import (
+	"fmt"
 	"log"
 	"os"
-	"fmt"
 )
 
 var logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -18,7 +18,7 @@ func LogWarning(messages ...interface{}) {
 
 }
 
-func LogError(messages ...interface{}	) {
+func LogError(messages ...interface{}) {
 	fmt.Print("\x1b[ERROR]\x1b[0m")
 	logger.Println(messages...)
 	os.Exit(1)
@@ -31,6 +31,3 @@ func Println(messages ...interface{}) {
 func Print(messages ...interface{}) {
 	fmt.Print(messages...)
 }
-
-
-

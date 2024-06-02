@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"strconv"
 	"log"
+	"strconv"
 )
 
 func SplitString(s string) []string {
@@ -27,4 +27,3 @@ func ParseNumbers(numbersStr string) []int {
 	}
 	return numbers
 }
-

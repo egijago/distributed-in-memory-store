@@ -5,7 +5,7 @@ type ClientStrlnRequest struct {
 }
 
 type ClientStrlnResponse struct {
-	Length int
+	Length  int
 	Success bool
 }
 
@@ -14,7 +14,7 @@ type ClientDeleteRequest struct {
 }
 
 type ClientDeleteResponse struct {
-	Value string
+	Value   string
 	Success bool
 }
 
@@ -23,13 +23,12 @@ type ClientGetRequest struct {
 }
 
 type ClientGetResponse struct {
-	Value string
+	Value   string
 	Success bool
 }
 
-
 type ClientSetRequest struct {
-	Key string
+	Key   string
 	Value string
 }
 
@@ -38,11 +37,11 @@ type ClientSetResponse struct {
 }
 
 type ClientAppendRequest struct {
-	Key string
+	Key   string
 	Value string
 }
 
 type ClientAppendResponse struct {
-	Value string
+	Value   string
 	Success bool
 }

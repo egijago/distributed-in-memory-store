@@ -1,18 +1,20 @@
 package main
 
 import (
-	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
 	repository "if3230-tubes-williamjeffersonclinton/internal/domain/repository"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/services"
-	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
 	"if3230-tubes-williamjeffersonclinton/internal/interfaces/grpc/handlers"
+	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
+
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
 
 	"context"
 	"flag"
 	"log"
 	"net"
 	"net/http"
+
 	"google.golang.org/grpc"
 )
 

@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/services"
+	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
 )
 
 type GrpcHandler struct {
@@ -19,4 +19,3 @@ func NewGrpcHandler(raftService *services.RaftService, clientService *services.C
 		clientService: clientService,
 	}
 }
-

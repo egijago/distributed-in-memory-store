@@ -4,18 +4,19 @@ import (
 	"if3230-tubes-williamjeffersonclinton/internal/domain/dtos"
 	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
 	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
-	
+
 	"context"
 	"log"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 type RaftClient struct {
-	Address    entity.Address
-	NextIndex  int
-	MatchIndex int
-	protoClient   pb.RaftServiceClient
+	Address     entity.Address
+	NextIndex   int
+	MatchIndex  int
+	protoClient pb.RaftServiceClient
 }
 
 func NewRaftClient(address entity.Address) *RaftClient {
@@ -24,7 +25,7 @@ func NewRaftClient(address entity.Address) *RaftClient {
 		log.Fatalf("did not connect: %v", err)
 	}
 	return &RaftClient{
-		Address:  address,
+		Address:     address,
 		protoClient: pb.NewRaftServiceClient(conn),
 	}
 }
@@ -33,12 +34,11 @@ func (r *RaftClient) AppendEntries(ctx context.Context, request dtos.RaftAppendE
 	pbEntries := []*pb.Log{}
 	for _, entry := range request.Entries {
 		pbEntries = append(pbEntries, &pb.Log{
-			Index: int32(entry.Index),
+			Index:   int32(entry.Index),
 			Command: entry.Command,
-			Term: int32(entry.Term),
+			Term:    int32(entry.Term),
 		})
 	}
-
 
 	response, err := r.protoClient.AppendEntries(ctx, &pb.RaftAppendEntriesRequest{
 		Term:         int32(request.Term),
@@ -48,7 +48,7 @@ func (r *RaftClient) AppendEntries(ctx context.Context, request dtos.RaftAppendE
 		Entries:      pbEntries,
 		LeaderCommit: int32(request.LeaderCommit),
 	})
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -57,16 +57,15 @@ func (r *RaftClient) AppendEntries(ctx context.Context, request dtos.RaftAppendE
 		Term:    int(response.Term),
 		Success: response.Success,
 	}, nil
-}	
-	
+}
 
 func (r *RaftClient) RequestVote(ctx context.Context, request dtos.RaftRequestVoteRequest) (*dtos.RaftRequestVoteResponse, error) {
-	
+
 	response, err := r.protoClient.RequestVote(ctx, &pb.RaftRequestVoteRequest{
-		Term: int32(request.Term),
-		CandidateId: int32(request.CandidateId),
+		Term:         int32(request.Term),
+		CandidateId:  int32(request.CandidateId),
 		LastLogIndex: int32(request.LastLogIndex),
-		LastLogTerm: int32(request.LastLogTerm),
+		LastLogTerm:  int32(request.LastLogTerm),
 	})
 	if err != nil {
 		return nil, err
@@ -93,7 +92,6 @@ func (r *RaftClient) ApplyMembership(ctx context.Context, request dtos.RaftApply
 	for _, member := range response.Members {
 		addreses = append(addreses, *entity.NewAddress(member.Host, member.Port))
 	}
-
 
 	return &dtos.RaftApplyMembershipResponse{
 		Id:      int(response.Id),

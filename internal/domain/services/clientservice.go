@@ -1,44 +1,42 @@
 package services
 
 import (
-	"if3230-tubes-williamjeffersonclinton/internal/domain/entities"
-	"if3230-tubes-williamjeffersonclinton/internal/domain/repository"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/dtos"
+	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+	"if3230-tubes-williamjeffersonclinton/internal/domain/repository"
 	// "if3230-tubes-williamjeffersonclinton/internal/utils"
 )
 
 type ClientService struct {
-	lastApplied int
-	currentTerm int
-	kvRepository repository.KeyValueRepositoryInterface
+	lastApplied   int
+	currentTerm   int
+	kvRepository  repository.KeyValueRepositoryInterface
 	logRepository repository.LogRepositoryInterface
 }
 
 func NewClientService(kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface) *ClientService {
 	return &ClientService{
-		kvRepository: kvRepository,
+		kvRepository:  kvRepository,
 		logRepository: logRepository,
 	}
 }
 
 func (k *ClientService) Set(request dtos.ClientSetRequest) (response *dtos.ClientSetResponse) {
-	
+
 	// if its a leader
-	newLog := entity.Log {
-		Index: k.lastApplied,
+	newLog := entity.Log{
+		Index:   k.lastApplied,
 		Command: "set " + request.Key + " " + request.Value,
-		Term: k.currentTerm,
+		Term:    k.currentTerm,
 	}
 	k.logRepository.Append(newLog)
 
-	// propagate the log to other node 
+	// propagate the log to other node
 
-
-	
-	// apply the log to the state machine 
+	// apply the log to the state machine
 
 	// if less than majority
-	if (false) {
+	if false {
 		return &dtos.ClientSetResponse{
 			Success: false,
 		}
@@ -50,67 +48,61 @@ func (k *ClientService) Set(request dtos.ClientSetRequest) (response *dtos.Clien
 	}
 }
 
-
-
 func (k *ClientService) Get(request dtos.ClientGetRequest) (response *dtos.ClientGetResponse) {
-	if (false) { // if election is happening
-		return &dtos.ClientGetResponse {
-			Value: "",
+	if false { // if election is happening
+		return &dtos.ClientGetResponse{
+			Value:   "",
 			Success: false,
-		}		
+		}
 	}
-	
+
 	Value, found := k.kvRepository.Get(request.Key)
 
-	if (!found) {
-		return &dtos.ClientGetResponse {
-			Value: "",
+	if !found {
+		return &dtos.ClientGetResponse{
+			Value:   "",
 			Success: false,
-		}	
+		}
 	}
-	return &dtos.ClientGetResponse {
-		Value: Value,
+	return &dtos.ClientGetResponse{
+		Value:   Value,
 		Success: true,
 	}
 }
 
-
-
-
 func (k *ClientService) Delete(request dtos.ClientDeleteRequest) (response *dtos.ClientDeleteResponse) {
-	if (false) { // if election is happening
-		return &dtos.ClientDeleteResponse {
+	if false { // if election is happening
+		return &dtos.ClientDeleteResponse{
 			Success: false,
-		}		
+		}
 	}
-	
+
 	value, found := k.kvRepository.Get(request.Key)
 
-	if (!found) {
-		return &dtos.ClientDeleteResponse {
+	if !found {
+		return &dtos.ClientDeleteResponse{
 			Success: false,
-		}	
+		}
 	}
 
 	k.kvRepository.Delete(request.Key)
 
-	return &dtos.ClientDeleteResponse {
-		Value: value,
+	return &dtos.ClientDeleteResponse{
+		Value:   value,
 		Success: true,
 	}
 }
 
-
 func (k *ClientService) Append(request dtos.ClientAppendRequest) (response *dtos.ClientAppendResponse) {
-	if (false) { // if election is happening
-		return &dtos.ClientAppendResponse {
+	if false { // if election is happening
+		return &dtos.ClientAppendResponse{
 			Success: false,
-		}		
+		}
 	}
-	
+
 	Value, found := k.kvRepository.Get(request.Key)
 
-	if (found) {
+	if found {
 		Value = Value + request.Value
 	} else {
 		Value = request.Value
@@ -118,33 +110,32 @@ func (k *ClientService) Append(request dtos.ClientAppendRequest) (response *dtos
 
 	k.kvRepository.Set(request.Key, Value)
 
-	return &dtos.ClientAppendResponse {
-		Value: Value,
+	return &dtos.ClientAppendResponse{
+		Value:   Value,
 		Success: true,
 	}
 }
 
-
 func (k *ClientService) Strln(request dtos.ClientStrlnRequest) (response *dtos.ClientStrlnResponse) {
-	if (false) { // if election is happening
-		return &dtos.ClientStrlnResponse {
+	if false { // if election is happening
+		return &dtos.ClientStrlnResponse{
 			Success: false,
-		}		
+		}
 	}
-	
+
 	Value, found := k.kvRepository.Get(request.Key)
 
 	length := 0
-	if (found) {
+	if found {
 		length = len(Value)
-		return &dtos.ClientStrlnResponse {
-			Length: length,
+		return &dtos.ClientStrlnResponse{
+			Length:  length,
 			Success: true,
 		}
 	}
 
-	return &dtos.ClientStrlnResponse {
-		Length: length,
+	return &dtos.ClientStrlnResponse{
+		Length:  length,
 		Success: false,
 	}
 }
