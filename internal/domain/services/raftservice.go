@@ -82,9 +82,9 @@ func NewRaftLeaderService(address entity.Address, kvRepository repository.KeyVal
 func NewRaftFollowerService(address entity.Address, kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface, masterAddress entity.Address) *RaftService {
 	master := clients.NewRaftClient(masterAddress)
 	utils.LogInfo("[CREATE RAFT] trying to apply membership to ", master.Address.String())
-	response, error := master.ApplyMembership(context.Background(), dtos.RaftApplyMembershipRequest{Address: address})
-	if error != nil {
-		utils.LogError("[CREATE RAFT] failed to apply membership: %v", error)
+	response, err := master.ApplyMembership(context.Background(), dtos.RaftApplyMembershipRequest{Address: address})
+	if err != nil {
+		utils.LogError("[CREATE RAFT] failed to apply membership: %v", err)
 	}
 	utils.LogInfo("[CREATE RAFT] membership granted from ", master.Address.String())
 
