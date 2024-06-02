@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+option go_package = "proto.pb";
+
+package client;
+
+
+service ClientService {
+    rpc Ping(ClientPingRequest) returns (ClientPingResponse);
+    rpc Get(ClientGetRequest) returns (ClientGetResponse);
+    rpc Set(ClientSetRequest) returns (ClientSetResponse);
+    rpc Strln(ClientStrlnRequest) returns (ClientStrlnResponse);
+    rpc Del (ClientDelRequest) returns (ClientDelResponse);
+    rpc Append (ClientAppendRequest) returns (ClientAppendResponse);
+}
+
+message ClientPingRequest {
+    string message = 1;
+}
+
+message ClientPingResponse {
+    string message = 1;
+}
+
+message ClientGetRequest {
+    string key = 1;
+}
+
+message ClientGetResponse {
+    string value = 1;
+}
+
+message ClientSetRequest {
+    string key = 1;
+    string value = 2;
+}
+
+message ClientSetResponse {
+    string message = 1;
+}
+
+message ClientStrlnRequest {
+    string key = 1;
+}
+
+message ClientStrlnResponse {
+    int32 length = 1;
+}
+
+message ClientDelRequest {
+    string key = 1;
+}
+
+message ClientDelResponse {
+    string value = 1;
+}
+
+message ClientAppendRequest {
+    string key = 1;
+    string value = 2;
+}
+
+message ClientAppendResponse {
+    string value = 1;
+}

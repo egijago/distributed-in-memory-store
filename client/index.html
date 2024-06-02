@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distributed Key-Value Store</title>
+    <style>
+        body {
+          color: white;
+          background-color: black;
+        }
+
+        #cli {
+          margin-top: 10px;
+          width: 50vw; 
+          height: 50vh;
+        } 
+
+        #output {
+          border-width: 1px;
+          border-color: white;
+          border-style: solid; /* Add this line */
+          width: 100%; 
+          height: 100%; 
+          overflow-y: auto;
+        }
+
+        #command {
+          border: none;
+          outline: none;
+          width: 100%; 
+          height: 20px;
+        }
+        </style>
+</head>
+<body>
+    <h1>Distributed Key-Value Store</h1>
+    <label for="port">localhost:  </label><input type="text" id="port" name="port" value="8001">
+    <div id="cli">
+      <div id="output"></div>
+      <input type="text"  id="command" name="command">
+    </div>
+
+    <script>var exports = {} </script>
+    <script type="module" src="./generated/proto/client_pb.js "></script> 
+    <script type="module" src="./generated/proto/client_grpc_web_pb.js"></script> 
+    <script type="module" src="main.js"></script> 
+</body>
+</html>
