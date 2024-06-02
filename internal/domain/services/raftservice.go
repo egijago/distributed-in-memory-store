@@ -2,6 +2,7 @@ package services
 
 import (
 	"if3230-tubes-williamjeffersonclinton/internal/domain/clients"
+	"if3230-tubes-williamjeffersonclinton/internal/domain/constants"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/dtos"
 	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
 	repository "if3230-tubes-williamjeffersonclinton/internal/domain/repository"
@@ -32,7 +33,7 @@ type RaftService struct {
 	LastApplied int
 
 	// Volatile State on Leaders
-	IsLeader   bool
+	Role       int
 	NextIndex  map[clients.RaftClient]int
 	MatchIndex map[clients.RaftClient]int
 }
@@ -51,7 +52,7 @@ func NewRaftService(address entity.Address, kvRepository repository.KeyValueRepo
 		CommitIndex: 0,
 		LastApplied: 0,
 
-		IsLeader:   false,
+		Role:       constants.NODE_ROLE_FOLLOWER,
 		NextIndex:  make(map[clients.RaftClient]int),
 		MatchIndex: make(map[clients.RaftClient]int),
 	}
@@ -71,7 +72,7 @@ func NewRaftLeaderService(address entity.Address, kvRepository repository.KeyVal
 		CommitIndex: 0,
 		LastApplied: 0,
 
-		IsLeader:   true,
+		Role:       constants.NODE_ROLE_LEADER,
 		NextIndex:  make(map[clients.RaftClient]int),
 		MatchIndex: make(map[clients.RaftClient]int),
 	}
@@ -110,7 +111,7 @@ func NewRaftFollowerService(address entity.Address, kvRepository repository.KeyV
 		CommitIndex: 0,
 		LastApplied: 0,
 
-		IsLeader:   false,
+		Role:       constants.NODE_ROLE_FOLLOWER,
 		NextIndex:  make(map[clients.RaftClient]int),
 		MatchIndex: make(map[clients.RaftClient]int),
 	}
@@ -223,7 +224,7 @@ func (k *RaftService) ApplyMembership(request dtos.RaftApplyMembershipRequest) (
 }
 
 func (k *RaftService) InitializeAsLeader() {
-	k.IsLeader = true
+	k.Role = constants.NODE_ROLE_LEADER
 	go func() {
 		for {
 			k.PropagateEntries()
