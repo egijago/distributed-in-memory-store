@@ -2,27 +2,34 @@ package repositories
 
 import (
 	"if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+	"if3230-tubes-williamjeffersonclinton/internal/utils"
 )
 
 type LogRepositoryInterface interface {
+	GetBuffer() map[int]entities.Log
 	Append(entities.Log)
 	Get(int) (entities.Log, bool)
 	Delete(int)
 	GetLastLog() (entities.Log, bool)
 	FindLogIndex(int) int
+	GetLastIndex() int
 	DeleteLogsFromIndex(int)
 }
 
 type LogRepository struct {
 	lastIndex int
-	buffer    map[int]entities.Log
+	buffer    map[int]entities.Log /* Dictionary { Key: Integer, Value: Entities.Log } */
 }
 
 func NewLogRepository() *LogRepository {
 	return &LogRepository{
-		lastIndex: 0,
+		lastIndex: -1,
 		buffer:    make(map[int]entities.Log),
 	}
+}
+
+func (l *LogRepository) GetBuffer() map[int]entities.Log {
+	return l.buffer
 }
 
 func (l *LogRepository) Append(value entities.Log) {
@@ -30,11 +37,15 @@ func (l *LogRepository) Append(value entities.Log) {
 	l.buffer[l.lastIndex] = value
 }
 
-func (l *LogRepository) Get(key int) (entities.Log, bool) {
-	if key < 0 || key > l.lastIndex {
+func (l *LogRepository) Get(idx int) (entities.Log, bool) {
+	if idx < 0 || idx > l.lastIndex {
+		utils.LogInfo(l.lastIndex)
+		utils.LogInfo("HOHOSSSSS")
+		
 		return entities.Log{}, false
 	}
-	value, exists := l.buffer[key]
+
+	value, exists := l.buffer[idx]
 	return value, exists
 }
 

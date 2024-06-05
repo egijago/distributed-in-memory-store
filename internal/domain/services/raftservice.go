@@ -96,9 +96,24 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 		Reply false if log doesn’t contain an entry at prevLogIndex whose term matches prevLogTerm.
 		Leader must retry with lower index.
 	*/
+	utils.LogInfo("PREV LOG IDX")
+	utils.LogInfo(request.PrevLogIndex)
 	if request.PrevLogIndex != constants.INVALID_ID {
+		utils.LogInfo(request.PrevLogIndex)
+		utils.LogInfo("HUAHAHA")
 		log, success := k.logRepository.Get(request.PrevLogIndex)
 		if !success || log.Term != request.PrevLogTerm {
+			if (!success) {
+				utils.LogInfo("HOHO")
+			}
+			utils.LogInfo("LOG TERM")
+			utils.LogInfo(log.Term)
+			utils.LogInfo("PREV LOG TERM")
+			utils.LogInfo(request.PrevLogTerm)
+			
+			if log.Term != request.PrevLogTerm {
+				utils.LogInfo("HIHI")
+			}
 			utils.LogInfo("[APPEND] Aborted: log doesn’t contain an entry at prevLogIndex whose term matches prevLogTerm")
 			return &dtos.RaftAppendEntriesResponse{
 				Term:    k.state.CurrentTerm,
@@ -113,6 +128,7 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 		if indexExists {
 			// Conflict detected: same index but different term
 			if log1.Term != newLog.Term {
+				utils.LogInfo("INDEX EXISTS TERM DIFF")
 				// Delete the existing entry and all that follow it
 				k.logRepository.DeleteLogsFromIndex(newLog.Index)
 				// Append the new log
@@ -124,6 +140,7 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 				}
 			}
 		} else {
+			utils.LogInfo("No conflict")
 			// No conflict, append the new log
 			k.logRepository.Append(newLog)
 
@@ -134,7 +151,25 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 		}
 	}
 
+	if (k.state.CommitIndex < request.LeaderCommit) {
+		/* Execute every command from commitIndex + 1 to leaderCommit index */
+		for i := k.state.CommitIndex + 1; i <= request.LeaderCommit; i++ {
+			// Get log
+			log, _ := k.logRepository.Get(i)
+
+			// Get parsed words from log to differentiate commands
+			command, arg1, arg2 := log.Parse()
+			if (command != "mem") { 	/* Regular commands */
+				k.kvRepository.ExecuteCommand(log)
+			} else {				 	/* Add Member */
+				k.state.AddMember(entities.Address{ Host: arg1, Port: arg2 })
+			}
+			
+		}
+	}
+
 	utils.LogInfo("[APPEND] Agree to append entries")
+	utils.LogInfo(k.logRepository.GetLastIndex())
 	return &dtos.RaftAppendEntriesResponse{
 		Term:    k.state.CurrentTerm,
 		Success: true,
@@ -176,6 +211,7 @@ func (k *RaftService) ApplyMembership(request dtos.RaftApplyMembershipRequest) (
 	utils.LogInfo("[MEMBERSHIP] membership granted to ", request.Address.String())
 
 	// TODO: CHECK IF MASTER
+	/* Append member to existing members */
 	k.state.Members = append(k.state.Members, *entities.NewRaftClient(request.Address))
 
 	memberAddresses := []entities.Address{}
@@ -185,6 +221,15 @@ func (k *RaftService) ApplyMembership(request dtos.RaftApplyMembershipRequest) (
 		memberAddresses = append(memberAddresses, member.Address)
 	}
 	utils.Print("\n")
+
+	/* Log for Add Member Command */
+	log := entities.Log{
+		Index: k.logRepository.GetLastIndex() + 1,
+		Command: "mem " + request.Address.Host + request.Address.Port,
+		Term: k.state.CurrentTerm,
+	}
+
+	k.logRepository.Append(log)
 
 	return &dtos.RaftApplyMembershipResponse{
 		Id:      len(k.state.Members) - 1,
@@ -201,6 +246,10 @@ func (k *RaftService) startHeartbeatEmitter() {
 			return
 		default:
 			utils.LogInfo("[HEARTBEAT] Sending heartbeat...")
+			utils.LogInfo(k.logRepository.GetLastIndex())
+			lastLog, _ := k.logRepository.GetLastLog()
+
+			utils.LogInfo(lastLog.Index)
 			k.sendEntriesToAllMembers()
 			time.Sleep(k.state.HeartbeatInterval)
 		}
@@ -236,20 +285,33 @@ func (k *RaftService) sendEntriesToAllMembers() {
 	countAgree := 0
 	var mutex sync.Mutex
 
-	log, found := k.logRepository.GetLastLog()
-
-	prevLogIndex := constants.INVALID_ID
-	if found {
-		prevLogIndex = log.Index
-	}
+	
 
 	for id, member := range k.state.Members {
 		if id == k.state.Id {
 			utils.LogInfo("[HEARTBEAT] Skip sending heartbeat to self")
 			continue
 		}
+		prevLog, found := k.logRepository.Get(member.NextIndex - 1)	
+
+		prevLogIndex := constants.INVALID_ID
+		prevLogTerm := constants.INVALID_ID
+		if found {
+			prevLogIndex = prevLog.Index
+			prevLogTerm = prevLog.Term
+		}
+
 		utils.LogInfo("[HEARTBEAT] Sending heartbeat to ", member.Address.String(), "...")
 
+		logMap := k.logRepository.GetBuffer()
+
+		// Convert map[int] tp [int]
+		var entries []entities.Log
+		var i int
+		for i = member.NextIndex; i <= k.logRepository.GetLastIndex(); i++ {
+			entries = append(entries, logMap[i])
+		} 
+		
 		wg.Add(1)
 		go func(member entities.RaftClient) {
 			defer wg.Done()
@@ -257,8 +319,8 @@ func (k *RaftService) sendEntriesToAllMembers() {
 				Term:         k.state.CurrentTerm,
 				LeaderId:     k.state.Id,
 				PrevLogIndex: prevLogIndex,
-				PrevLogTerm:  0,
-				Entries:      []entities.Log{},
+				PrevLogTerm:  prevLogTerm,
+				Entries:      entries,
 				LeaderCommit: k.state.CommitIndex,
 			})
 
@@ -270,6 +332,9 @@ func (k *RaftService) sendEntriesToAllMembers() {
 				mutex.Lock()
 				countAgree++
 				mutex.Unlock()
+				member.NextIndex = k.logRepository.GetLastIndex() + 1
+			} else {
+				member.NextIndex--
 			}
 		}(member)
 	}

@@ -1,5 +1,7 @@
 package dtos
 
+import "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+
 type ClientStrlnRequest struct {
 	Key string
 }
@@ -43,5 +45,13 @@ type ClientAppendRequest struct {
 
 type ClientAppendResponse struct {
 	Value   string
+	Success bool
+}
+
+type ClientAddMemberRequest struct {
+	Address entities.Address
+}
+
+type ClientAddMemberResponse struct {
 	Success bool
 }

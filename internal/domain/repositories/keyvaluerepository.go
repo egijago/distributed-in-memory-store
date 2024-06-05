@@ -1,9 +1,13 @@
 package repositories
 
+import "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+
 type KeyValueRepositoryInterface interface {
 	Set(string, string)
 	Get(string) (string, bool)
 	Delete(string)
+	Append(string, string)
+	ExecuteCommand(entities.Log)
 }
 
 type KeyValueRepository struct {
@@ -27,4 +31,27 @@ func (l *KeyValueRepository) Get(key string) (string, bool) {
 
 func (l *KeyValueRepository) Delete(key string) {
 	delete(l.buffer, key)
+}
+
+func (l *KeyValueRepository) Append(key string, value string) {
+	data, ok := l.Get(key)
+	if ok {
+		data = data + value
+	} else {
+		data = value
+	}
+
+	l.Set(key, data)
+}
+
+func (l *KeyValueRepository) ExecuteCommand(log entities.Log) {
+	command, arg1, arg2 := log.Parse()
+	switch command {
+	case "set":
+		l.Set(arg1, arg2)
+	case "delete":
+		l.Delete(arg1)
+	case "append":
+		l.Append(arg1, arg2)
+	}
 }

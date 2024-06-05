@@ -45,8 +45,8 @@ func NewState(address Address, electionTimeout int, heartbeatInterval int) *Stat
 		CurrentTerm: constants.INVALID_TERM,
 		VotedFor:    constants.NO_VOTE,
 
-		CommitIndex: 0,
-		LastApplied: 0,
+		CommitIndex: -1,
+		LastApplied: -1,
 
 		Role:       constants.NODE_ROLE_FOLLOWER,
 		NextIndex:  make(map[RaftClient]int),
@@ -56,4 +56,11 @@ func NewState(address Address, electionTimeout int, heartbeatInterval int) *Stat
 		HeartbeatInterval: time.Duration(heartbeatInterval) * time.Millisecond,
 		HeartbeatTimeout:  time.Duration(heartbeatTimeout) * time.Millisecond,
 	}
+}
+
+func (k *State) AddMember(address Address) (success bool) {
+	newMember := NewRaftClient(*NewAddress(address.Host, address.Port))
+	k.Members = append(k.Members, *newMember)
+
+	return true
 }

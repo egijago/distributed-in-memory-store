@@ -23,7 +23,7 @@ func NewClientService(kvRepository repositories.KeyValueRepositoryInterface, log
 
 func (k *ClientService) Set(request dtos.ClientSetRequest) (response *dtos.ClientSetResponse) {
 	newLog := entity.Log{
-		Index:   k.lastApplied,
+		Index:   k.logRepository.GetLastIndex(),
 		Command: "set " + request.Key + " " + request.Value,
 		Term:    k.currentTerm,
 	}
@@ -39,7 +39,9 @@ func (k *ClientService) Set(request dtos.ClientSetRequest) (response *dtos.Clien
 			Success: false,
 		}
 	}
-	k.kvRepository.Set(request.Key, request.Value)
+	
+	/* Already in ExecuteCommand */
+	// k.kvRepository.Set(request.Key, request.Value)
 
 	return &dtos.ClientSetResponse{
 		Success: true,
@@ -83,11 +85,12 @@ func (k *ClientService) Delete(request dtos.ClientDeleteRequest) (response *dtos
 		}
 	}
 
-	k.kvRepository.Delete(request.Key)
+	/* Already in ExecuteCommand */
+	// k.kvRepository.Delete(request.Key)
 
 	return &dtos.ClientDeleteResponse{
 		Value:   value,
-		Success: true,
+		Success: found,
 	}
 }
 
@@ -98,18 +101,12 @@ func (k *ClientService) Append(request dtos.ClientAppendRequest) (response *dtos
 		}
 	}
 
-	Value, found := k.kvRepository.Get(request.Key)
-
-	if found {
-		Value = Value + request.Value
-	} else {
-		Value = request.Value
-	}
-
-	k.kvRepository.Set(request.Key, Value)
+	/* Append word not needed (already in ExecuteCommand) */
+	// k.kvRepository.Append(request.Key, request.Value)
+	data, _ := k.kvRepository.Get(request.Key)
 
 	return &dtos.ClientAppendResponse{
-		Value:   Value,
+		Value:  data,
 		Success: true,
 	}
 }
@@ -137,3 +134,5 @@ func (k *ClientService) Strln(request dtos.ClientStrlnRequest) (response *dtos.C
 		Success: false,
 	}
 }
+
+

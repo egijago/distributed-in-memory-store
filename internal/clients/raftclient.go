@@ -33,8 +33,6 @@ type RaftClientCaller interface {
 	ApplyMembership(client entities.RaftClient, request dtos.RaftApplyMembershipRequest) (*dtos.RaftApplyMembershipResponse, error)
 }
 
-
-
 func (*RaftClientCallerImpl) AppendEntries(client entities.RaftClient, request dtos.RaftAppendEntriesRequest) (*dtos.RaftAppendEntriesResponse, error) {
 	pbEntries := []*pb.Log{}
 	for _, entry := range request.Entries {
