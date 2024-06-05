@@ -155,16 +155,20 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 		/* Execute every command from commitIndex + 1 to leaderCommit index */
 		for i := k.state.CommitIndex + 1; i <= request.LeaderCommit; i++ {
 			// Get log
-			log, _ := k.logRepository.Get(i)
+			log, ok := k.logRepository.Get(i)
 
-			// Get parsed words from log to differentiate commands
-			command, arg1, arg2 := log.Parse()
-			if (command != "mem") { 	/* Regular commands */
-				k.kvRepository.ExecuteCommand(log)
-			} else {				 	/* Add Member */
-				k.state.AddMember(entities.Address{ Host: arg1, Port: arg2 })
+			if ok {
+				k.state.CommitIndex++
+				// Get parsed words from log to differentiate commands
+				command, arg1, arg2 := log.Parse()
+				utils.LogInfo(command)
+				if (command != "mem") { 	/* Regular commands */
+					k.kvRepository.ExecuteCommand(log)
+				} else {				 	/* Add Member */
+					utils.LogInfo("Add Member")
+					k.state.AddMember(entities.Address{ Host: arg1, Port: arg2 })
+				}
 			}
-			
 		}
 	}
 
@@ -225,7 +229,7 @@ func (k *RaftService) ApplyMembership(request dtos.RaftApplyMembershipRequest) (
 	/* Log for Add Member Command */
 	log := entities.Log{
 		Index: k.logRepository.GetLastIndex() + 1,
-		Command: "mem " + request.Address.Host + request.Address.Port,
+		Command: "mem " + request.Address.Host + " " + request.Address.Port,
 		Term: k.state.CurrentTerm,
 	}
 
@@ -340,9 +344,10 @@ func (k *RaftService) sendEntriesToAllMembers() {
 	}
 	wg.Wait()
 	utils.Println("countAgree: ", countAgree)
-	// if countAgree > len(k.state.Members)/2 {
-	// 	k.state.CommitIndex++
-	// }
+	if countAgree > len(k.state.Members)/2 {
+		utils.LogInfo("Success commit")
+		k.state.CommitIndex = k.logRepository.GetLastIndex()
+	}
 }
 
 func (k *RaftService) initializeVoting() {
@@ -396,6 +401,7 @@ func (k *RaftService) initializeVoting() {
 
 	// 150 - 300 ms
 	if countAgree > len(k.state.Members)/2 {
+		utils.LogInfo(len(k.state.Members))
 		utils.Println("[ELECTION] count agree > majority, start serving as a leader", countAgree)
 		go k.startHeartbeatEmitter()
 	} else {
