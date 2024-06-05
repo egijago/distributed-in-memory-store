@@ -16,14 +16,24 @@ import (
 	"net/http"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/peer"
+
 )
 
 func requestLogger(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	log.Printf("Received request: %s", info.FullMethod)
-	resp, err := handler(ctx, req)
+	p, ok := peer.FromContext(ctx)
+	if ok {
+		addr := p.Addr
+		log.Printf("Received request: %s from %s", info.FullMethod, addr.String())
+	} else {
+		log.Printf("Received request: %s", info.FullMethod)
+	}
 
+	resp, err := handler(ctx, req)
 	return resp, err
+
 }
+
 
 func main() {
 	/* Parse argument(s) */
