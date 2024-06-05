@@ -60,7 +60,7 @@ func NewRaftService(address entity.Address, kvRepository repository.KeyValueRepo
 		Address:  address,
 		LeaderId: INVALID_ID,
 
-		CurrentTerm:   0,
+		CurrentTerm:   INVALID_TERM,
 		VotedFor:      NO_VOTE,
 		logRepository: logRepository,
 		kvRepository:  kvRepository,
@@ -98,8 +98,8 @@ func NewRaftLeaderService(address entity.Address, kvRepository repository.KeyVal
 		logRepository: logRepository,
 		kvRepository:  kvRepository,
 
-		CommitIndex: 0,
-		LastApplied: 0,
+		CommitIndex: INVALID_ID,
+		LastApplied: INVALID_ID,
 
 		Role:       constants.NODE_ROLE_LEADER,
 		NextIndex:  make(map[clients.RaftClient]int),
@@ -143,15 +143,15 @@ func NewRaftFollowerService(address entity.Address, kvRepository repository.KeyV
 		Members: members,
 		Address: address,
 
-		CurrentTerm: response.Id,
+		CurrentTerm: response.Term,
 
 		VotedFor: NO_VOTE,
 
 		logRepository: logRepository,
 		kvRepository:  kvRepository,
 
-		CommitIndex: 0,
-		LastApplied: 0,
+		CommitIndex: INVALID_ID,
+		LastApplied: INVALID_ID,
 
 		Role:       constants.NODE_ROLE_FOLLOWER,
 		NextIndex:  make(map[clients.RaftClient]int),
@@ -172,7 +172,7 @@ func NewRaftFollowerService(address entity.Address, kvRepository repository.KeyV
 
 // REQUEST MASUK
 func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (response *dtos.RaftAppendEntriesResponse) {
-
+	k.heartbeatRcvReset <- struct{}{}
 	utils.LogInfo("[APPEND] getting append request from ", k.Members[request.LeaderId].Address.String())
 
 	if request.LeaderId != k.LeaderId {
@@ -189,16 +189,19 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 		}
 	}
 
+	
 	/* 
 		Reply false if log doesn’t contain an entry at prevLogIndex whose term matches prevLogTerm.
 		Leader must retry with lower index.
 	*/
-	log, success := k.logRepository.Get(request.PrevLogIndex)
-	if !success || log.Term != request.PrevLogTerm {
-		utils.LogInfo("[APPEND] Aborted: log doesn’t contain an entry at prevLogIndex whose term matches prevLogTerm")
-		return &dtos.RaftAppendEntriesResponse{
-			Term:    k.CurrentTerm,
-			Success: false,
+	if request.PrevLogIndex != INVALID_ID {
+		log, success := k.logRepository.Get(request.PrevLogIndex)
+		if !success || log.Term != request.PrevLogTerm {
+			utils.LogInfo("[APPEND] Aborted: log doesn’t contain an entry at prevLogIndex whose term matches prevLogTerm")
+			return &dtos.RaftAppendEntriesResponse{
+				Term:    k.CurrentTerm,
+				Success: false,
+			}
 		}
 	}
 
@@ -228,8 +231,6 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 			}
 		}
 	}
-
-	k.heartbeatRcvReset <- struct{}{}
 
 	utils.LogInfo("[APPEND] Agree to append entries")
 	return &dtos.RaftAppendEntriesResponse{
@@ -335,6 +336,14 @@ func (k *RaftService) PropagateEntries() {
 	var wg sync.WaitGroup
 	countAgree := 0
 	var mutex sync.Mutex
+
+	log, found := k.logRepository.GetLastLog()
+
+	prevLogIndex := INVALID_ID
+	if found {
+		prevLogIndex = log.Index
+	}
+	
 	for id, member := range k.Members {
 		if id == k.Id {
 			continue
@@ -347,7 +356,7 @@ func (k *RaftService) PropagateEntries() {
 			resp, err := member.AppendEntries(context.Background(), dtos.RaftAppendEntriesRequest{
 				Term:         k.CurrentTerm,
 				LeaderId:     k.Id,
-				PrevLogIndex: 0,
+				PrevLogIndex: prevLogIndex,
 				PrevLogTerm:  0,
 				Entries:      []entity.Log{},
 				LeaderCommit: k.CommitIndex,
