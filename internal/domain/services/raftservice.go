@@ -1,205 +1,107 @@
 package services
 
 import (
-	"if3230-tubes-williamjeffersonclinton/internal/domain/clients"
+	"if3230-tubes-williamjeffersonclinton/internal/clients"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/constants"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/dtos"
-	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
-	repository "if3230-tubes-williamjeffersonclinton/internal/domain/repository"
+	entities "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+	repository "if3230-tubes-williamjeffersonclinton/internal/domain/repositories"
 	"if3230-tubes-williamjeffersonclinton/internal/utils"
 
-	"context"
-	"math/rand"
 	"sync"
 	"time"
 )
 
-const NO_VOTE = -1
-const INVALID_ID = -1
-const INVALID_TERM = -1
-
 type RaftService struct {
-	Id       int
-	Members  []clients.RaftClient
-	Address  entity.Address
-	LeaderId int
+	state entities.State
+	caller clients.RaftClientCaller
 
-	// Persistent State
-	CurrentTerm   int
-	VotedFor      int
 	logRepository repository.LogRepositoryInterface
 	kvRepository  repository.KeyValueRepositoryInterface
 
-	// Volatile State
-	CommitIndex int
-	LastApplied int
-
-	// Volatile State on Leaders
-	Role      int
-	roleMutex sync.Mutex // TODO: Implement mutex for role
-
-	NextIndex  map[clients.RaftClient]int
-	MatchIndex map[clients.RaftClient]int
-
-	// Time and Channels
-	ElectionTimeout time.Duration
-
-	HeartbeatInterval time.Duration
-	HeartbeatTimeout  time.Duration
 	heartbeatRcvStop  chan struct{}
 	heartbeatRcvReset chan struct{}
 	heartbeatSendStop chan struct{}
+
+	roleMutex sync.Mutex // TODO: Implement mutex for role
 }
 
-func NewRaftService(address entity.Address, kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface) *RaftService {
-	electionTimeout := rand.Intn(150) + 150
-	heartbeatTimeout := 3000 + rand.Intn(500)
+func NewRaftService(state entities.State, kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface) *RaftService {
 	return &RaftService{
-		Id:       0,
-		Members:  []clients.RaftClient{},
-		Address:  address,
-		LeaderId: INVALID_ID,
+		state:         state,
 
-		CurrentTerm:   INVALID_TERM,
-		VotedFor:      NO_VOTE,
+		caller : &clients.RaftClientCallerImpl{},
+
 		logRepository: logRepository,
 		kvRepository:  kvRepository,
 
-		CommitIndex: 0,
-		LastApplied: 0,
-
-		Role:       constants.NODE_ROLE_FOLLOWER,
-		NextIndex:  make(map[clients.RaftClient]int),
-		MatchIndex: make(map[clients.RaftClient]int),
-
-		ElectionTimeout:   time.Duration(electionTimeout) * time.Millisecond,
-		HeartbeatInterval: time.Duration(3000) * time.Millisecond,
-		HeartbeatTimeout:  time.Duration(heartbeatTimeout) * time.Millisecond,
 		heartbeatRcvStop:  make(chan struct{}),
 		heartbeatRcvReset: make(chan struct{}),
 		heartbeatSendStop: make(chan struct{}),
 	}
 }
 
-func NewRaftLeaderService(address entity.Address, kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface) *RaftService {
-	electionTimeout := rand.Intn(150) + 150
-	heartbeatTimeout := 3000 + rand.Intn(500)
-
-	member := clients.NewRaftClient(address)
-
-	service := &RaftService{
-		Id:       0,
-		Members:  []clients.RaftClient{*member},
-		Address:  address,
-		LeaderId: 0,
-
-		CurrentTerm:   0,
-		VotedFor:      NO_VOTE,
-		logRepository: logRepository,
-		kvRepository:  kvRepository,
-
-		CommitIndex: INVALID_ID,
-		LastApplied: INVALID_ID,
-
-		Role:       constants.NODE_ROLE_LEADER,
-		NextIndex:  make(map[clients.RaftClient]int),
-		MatchIndex: make(map[clients.RaftClient]int),
-
-		ElectionTimeout:   time.Duration(electionTimeout) * time.Millisecond,
-		HeartbeatInterval: time.Duration(3000) * time.Millisecond,
-		HeartbeatTimeout:  time.Duration(heartbeatTimeout) * time.Millisecond,
-		heartbeatRcvStop:  make(chan struct{}),
-		heartbeatRcvReset: make(chan struct{}),
-		heartbeatSendStop: make(chan struct{}),
-	}
-	go service.StartHeartbeatSender()
+func NewRaftLeaderService(state entities.State, kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface) *RaftService {
+	service := NewRaftService(state, kvRepository, logRepository)
+	go service.startHeartbeatEmitter()
 	return service
 }
 
-func NewRaftFollowerService(address entity.Address, kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface, masterAddress entity.Address) *RaftService {
-	master := clients.NewRaftClient(masterAddress)
+func NewRaftFollowerService(state entities.State, kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface, masterAddress entities.Address) *RaftService {	
+	service := NewRaftService(state, kvRepository, logRepository)
 
-	utils.LogInfo("[CREATE RAFT] trying to apply membership to ", master.Address.String())
-	response, err := master.ApplyMembership(context.Background(), dtos.RaftApplyMembershipRequest{Address: address})
+	master := entities.NewRaftClient(masterAddress)
+	utils.LogInfo("[CREATE RAFT] trying to apply membership to ", masterAddress.String())
+	response, err := service.caller.ApplyMembership(*master, dtos.RaftApplyMembershipRequest{Address: state.Address})
 	if err != nil {
 		utils.LogError("[CREATE RAFT] failed to apply membership: %v", err)
 	}
-	utils.LogInfo("[CREATE RAFT] membership granted from ", master.Address.String())
+	utils.LogInfo("[CREATE RAFT] membership granted from ", masterAddress.String())
 
 	utils.Print("Current members: ")
-	members := []clients.RaftClient{}
+	members := []entities.RaftClient{}
 	for _, member := range response.Members {
-		client := clients.NewRaftClient(*entity.NewAddress(member.Host, member.Port))
-			members = append(members, *client)
-			utils.Print(client.Address.String(), ",")
+		client := entities.NewRaftClient(*entities.NewAddress(member.Host, member.Port))
+		members = append(members, *client)
+		addr := client.Address
+		addrString := (&addr).String
+		utils.Print(addrString, ",")
 	}
 	utils.Print("\n")
 
-	electionTimeout := rand.Intn(150) + 150
-	heartbeatTimeout := 3000 + rand.Intn(500)
 
-	service := &RaftService{
-		Id:      response.Id,
-		Members: members,
-		Address: address,
-
-		CurrentTerm: response.Term,
-
-		VotedFor: NO_VOTE,
-
-		logRepository: logRepository,
-		kvRepository:  kvRepository,
-
-		CommitIndex: INVALID_ID,
-		LastApplied: INVALID_ID,
-
-		Role:       constants.NODE_ROLE_FOLLOWER,
-		NextIndex:  make(map[clients.RaftClient]int),
-		MatchIndex: make(map[clients.RaftClient]int),
-
-		ElectionTimeout: time.Duration(electionTimeout) * time.Millisecond,
-
-		HeartbeatInterval: time.Duration(3000) * time.Millisecond,
-		HeartbeatTimeout:  time.Duration(heartbeatTimeout) * time.Millisecond,
-		heartbeatRcvStop:  make(chan struct{}),
-		heartbeatRcvReset: make(chan struct{}),
-		heartbeatSendStop: make(chan struct{}),
-	}
-
-	go service.StartHeartbeatListener()
+	go service.startHeartbeatListener()
 	return service
 }
 
-// REQUEST MASUK
 func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (response *dtos.RaftAppendEntriesResponse) {
 	k.heartbeatRcvReset <- struct{}{}
-	utils.LogInfo("[APPEND] getting append request from ", k.Members[request.LeaderId].Address.String())
+	// utils.LogInfo("[APPEND] getting append request from ", k.state.Members[request.LeaderId].Address.String())
 
-	if request.LeaderId != k.LeaderId {
+	if request.LeaderId != k.state.LeaderId {
 
-		k.LeaderId = request.LeaderId
-		k.VotedFor = INVALID_ID
+		k.state.LeaderId = request.LeaderId
+		k.state.VotedFor = constants.INVALID_ID
 	}
 	/* Reply false if term < CurrentTerm */
-	if request.Term < k.CurrentTerm {
+	if request.Term < k.state.CurrentTerm {
 		utils.LogInfo("[APPEND] Aborted: term < CurrentTerm")
 		return &dtos.RaftAppendEntriesResponse{
-			Term:    k.CurrentTerm,
+			Term:    k.state.CurrentTerm,
 			Success: false,
 		}
 	}
 
-	
-	/* 
+	/*
 		Reply false if log doesn’t contain an entry at prevLogIndex whose term matches prevLogTerm.
 		Leader must retry with lower index.
 	*/
-	if request.PrevLogIndex != INVALID_ID {
+	if request.PrevLogIndex != constants.INVALID_ID {
 		log, success := k.logRepository.Get(request.PrevLogIndex)
 		if !success || log.Term != request.PrevLogTerm {
 			utils.LogInfo("[APPEND] Aborted: log doesn’t contain an entry at prevLogIndex whose term matches prevLogTerm")
 			return &dtos.RaftAppendEntriesResponse{
-				Term:    k.CurrentTerm,
+				Term:    k.state.CurrentTerm,
 				Success: false,
 			}
 		}
@@ -217,8 +119,8 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 				k.logRepository.Append(newLog)
 
 				//  If leaderCommit > CommitIndex, set CommitIndex = min(leaderCommit, index of last new entry)
-				if request.LeaderCommit > k.CommitIndex {
-					k.CommitIndex = min(request.LeaderCommit, newLog.Index)
+				if request.LeaderCommit > k.state.CommitIndex {
+					k.state.CommitIndex = min(request.LeaderCommit, newLog.Index)
 				}
 			}
 		} else {
@@ -226,90 +128,88 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 			k.logRepository.Append(newLog)
 
 			//  If leaderCommit > CommitIndex, set CommitIndex = min(leaderCommit, index of last new entry)
-			if request.LeaderCommit > k.CommitIndex {
-				k.CommitIndex = min(request.LeaderCommit, newLog.Index)
+			if request.LeaderCommit > k.state.CommitIndex {
+				k.state.CommitIndex = min(request.LeaderCommit, newLog.Index)
 			}
 		}
 	}
 
 	utils.LogInfo("[APPEND] Agree to append entries")
 	return &dtos.RaftAppendEntriesResponse{
-		Term:    k.CurrentTerm,
+		Term:    k.state.CurrentTerm,
 		Success: true,
 	}
 }
 
-// REQUEST MASUK
 func (k *RaftService) RequestVote(request dtos.RaftRequestVoteRequest) (response *dtos.RaftRequestVoteResponse) {
 	k.heartbeatRcvStop <- struct{}{}
 
-	utils.LogInfo("[VOTE] getting vote request from candidate ", request.CandidateId, "(", k.Members[request.CandidateId].Address.String(), ")")
+	utils.LogInfo("[VOTE] getting vote request from candidate ", request.CandidateId, "(", k.state.Members[request.CandidateId].Address.String(), ")")
 	lastLog, _ := k.logRepository.GetLastLog()
 	/* Reply false if term < CurrentTerm or candidate's log is not as up-to-date as the receiver's log */
-	if request.Term < k.CurrentTerm ||
+	if request.Term < k.state.CurrentTerm ||
 		request.LastLogTerm < lastLog.Term ||
 		request.LastLogIndex < lastLog.Index {
 		return &dtos.RaftRequestVoteResponse{
-			Term:        k.CurrentTerm,
+			Term:        k.state.CurrentTerm,
 			VoteGranted: false,
 		}
 	}
 
 	/* Reply false if not VotedFor is null or candidateId log */
-	if !(k.VotedFor == -1 || k.VotedFor == request.CandidateId) {
+	if !(k.state.VotedFor == -1 || k.state.VotedFor == request.CandidateId) {
 		return &dtos.RaftRequestVoteResponse{
-			Term:        k.CurrentTerm,
+			Term:        k.state.CurrentTerm,
 			VoteGranted: false,
 		}
 	}
 
-	k.VotedFor = request.CandidateId
+	k.state.VotedFor = request.CandidateId
 	return &dtos.RaftRequestVoteResponse{
-		Term:        k.CurrentTerm,
+		Term:        k.state.CurrentTerm,
 		VoteGranted: true,
 	}
 }
 
-// REQUEST MASUK
 func (k *RaftService) ApplyMembership(request dtos.RaftApplyMembershipRequest) (response *dtos.RaftApplyMembershipResponse) {
 	utils.LogInfo("[MEMBERSHIP] getting membership request from ", request.Address.String())
 	utils.LogInfo("[MEMBERSHIP] membership granted to ", request.Address.String())
 
 	// TODO: CHECK IF MASTER
-	k.Members = append(k.Members, *clients.NewRaftClient(request.Address))
+	k.state.Members = append(k.state.Members, *entities.NewRaftClient(request.Address))
 
-	memberAddresses := []entity.Address{}
+	memberAddresses := []entities.Address{}
 	utils.Print("Current members: ")
-	for _, member := range k.Members {
+	for _, member := range k.state.Members {
 		utils.Print(member.Address.String(), ",")
 		memberAddresses = append(memberAddresses, member.Address)
 	}
 	utils.Print("\n")
 
 	return &dtos.RaftApplyMembershipResponse{
-		Id:      len(k.Members) - 1,
+		Id:      len(k.state.Members) - 1,
 		Members: memberAddresses,
-		Term:    k.CurrentTerm,
+		Term:    k.state.CurrentTerm,
 		Success: true,
 	}
 }
 
-func (k *RaftService) StartHeartbeatSender() {
+func (k *RaftService) startHeartbeatEmitter() {
 	for {
 		select {
 		case <-k.heartbeatSendStop:
 			return
 		default:
 			utils.LogInfo("[HEARTBEAT] Sending heartbeat...")
-			k.PropagateEntries()
-			time.Sleep(k.HeartbeatInterval)
+			k.sendEntriesToAllMembers()
+			time.Sleep(k.state.HeartbeatInterval)
 		}
 	}
 }
 
-func (k *RaftService) StartHeartbeatListener() {
+func (k *RaftService) startHeartbeatListener() {
 
-	timer := time.NewTimer(k.HeartbeatTimeout)
+	timer := time.NewTimer(k.state.HeartbeatTimeout)
 	defer timer.Stop()
 
 	for {
@@ -319,47 +219,47 @@ func (k *RaftService) StartHeartbeatListener() {
 			return
 		case <-timer.C:
 			utils.LogInfo("[HEARTBEAT] Heartbeat timeout, start voting...")
-			k.InitializeVoting()
-			timer.Reset(k.HeartbeatTimeout)
+			k.initializeVoting()
+			timer.Reset(k.state.HeartbeatTimeout)
 			return
 		case <-k.heartbeatRcvReset:
 			if !timer.Stop() {
 				<-timer.C
 			}
-			timer.Reset(k.HeartbeatTimeout)
+			timer.Reset(k.state.HeartbeatTimeout)
 		}
 	}
 }
 
-// REQUEST KELUAR
-func (k *RaftService) PropagateEntries() {
+func (k *RaftService) sendEntriesToAllMembers() {
 	var wg sync.WaitGroup
 	countAgree := 0
 	var mutex sync.Mutex
 
 	log, found := k.logRepository.GetLastLog()
 
-	prevLogIndex := INVALID_ID
+	prevLogIndex := constants.INVALID_ID
 	if found {
 		prevLogIndex = log.Index
 	}
-	
-	for id, member := range k.Members {
-		if id == k.Id {
+
+	for id, member := range k.state.Members {
+		if id == k.state.Id {
+			utils.LogInfo("[HEARTBEAT] Skip sending heartbeat to self")
 			continue
 		}
+		utils.LogInfo("[HEARTBEAT] Sending heartbeat to ", member.Address.String(), "...")
 
 		wg.Add(1)
-		go func(member clients.RaftClient) {
+		go func(member entities.RaftClient) {
 			defer wg.Done()
-
-			resp, err := member.AppendEntries(context.Background(), dtos.RaftAppendEntriesRequest{
-				Term:         k.CurrentTerm,
-				LeaderId:     k.Id,
+			resp, err := k.caller.AppendEntries(member, dtos.RaftAppendEntriesRequest{
+				Term:         k.state.CurrentTerm,
+				LeaderId:     k.state.Id,
 				PrevLogIndex: prevLogIndex,
 				PrevLogTerm:  0,
-				Entries:      []entity.Log{},
-				LeaderCommit: k.CommitIndex,
+				Entries:      []entities.Log{},
+				LeaderCommit: k.state.CommitIndex,
 			})
 
 			if err != nil {
@@ -375,27 +275,26 @@ func (k *RaftService) PropagateEntries() {
 	}
 	wg.Wait()
 	utils.Println("countAgree: ", countAgree)
-	// if countAgree > len(k.Members)/2 {
-	// 	k.CommitIndex++
+	// if countAgree > len(k.state.Members)/2 {
+	// 	k.state.CommitIndex++
 	// }
 }
 
-// REQUEST KELUAR
-func (k *RaftService) InitializeVoting() {
+func (k *RaftService) initializeVoting() {
 	utils.Println("[ELECTION] Initialize voting")
-	k.CurrentTerm++
-	k.VotedFor = k.Id
-	k.Role = constants.NODE_ROLE_CANDIDATE
+	k.state.CurrentTerm++
+	k.state.VotedFor = k.state.Id
+	k.state.Role = constants.NODE_ROLE_CANDIDATE
 
 	var wg sync.WaitGroup
 	countAgree := 1
 	var mutex sync.Mutex
-	for id, member := range k.Members {
-		if id == k.Id {
+	for id, member := range k.state.Members {
+		if id == k.state.Id {
 			continue
 		}
 		wg.Add(1)
-		go func(member clients.RaftClient) {
+		go func(member entities.RaftClient) {
 			defer wg.Done()
 
 			lastLog, found := k.logRepository.GetLastLog()
@@ -408,9 +307,9 @@ func (k *RaftService) InitializeVoting() {
 				lastLogIndex = lastLog.Index
 				lastLogTerm = lastLog.Term
 			}
-			resp, err := member.RequestVote(context.Background(), dtos.RaftRequestVoteRequest{
-				Term:         k.CurrentTerm,
-				CandidateId:  k.Id,
+			resp, err := k.caller.RequestVote(member, dtos.RaftRequestVoteRequest{
+				Term:         k.state.CurrentTerm,
+				CandidateId:  k.state.Id,
 				LastLogIndex: lastLogIndex,
 				LastLogTerm:  lastLogTerm,
 			})
@@ -431,14 +330,14 @@ func (k *RaftService) InitializeVoting() {
 	utils.Println("[ELECTION] count agree: ", countAgree)
 
 	// 150 - 300 ms
-	if countAgree > len(k.Members)/2 {
+	if countAgree > len(k.state.Members)/2 {
 		utils.Println("[ELECTION] count agree > majority, start serving as a leader", countAgree)
-		go k.StartHeartbeatSender()
+		go k.startHeartbeatEmitter()
 	} else {
 		utils.Println("[ELECTION] count agree < majority, return to follower", countAgree)
-		go k.StartHeartbeatListener()
+		go k.startHeartbeatListener()
 	}
 
-	// if k.Role == constants.NODE_ROLE_CANDIDATE {
-	// 	k.Role
+	// if k.state.Role == constants.NODE_ROLE_CANDIDATE {
+	// 	k.state.Role
 }

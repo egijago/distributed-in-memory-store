@@ -1,7 +1,7 @@
 package dtos
 
 import (
-	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+	entities "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
 )
 
 type RaftAppendEntriesRequest struct {
@@ -9,7 +9,7 @@ type RaftAppendEntriesRequest struct {
 	LeaderId     int
 	PrevLogIndex int
 	PrevLogTerm  int
-	Entries      []entity.Log
+	Entries      []entities.Log
 	LeaderCommit int
 }
 
@@ -30,11 +30,11 @@ type RaftRequestVoteResponse struct {
 }
 
 type RaftApplyMembershipRequest struct {
-	Address entity.Address
+	Address entities.Address
 }
 type RaftApplyMembershipResponse struct {
 	Id      int
-	Members []entity.Address
+	Members []entities.Address
 	Term    int
 	Success bool
 }

@@ -1,36 +1,39 @@
-package repository
+package repositories
 
 import (
-	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+	"if3230-tubes-williamjeffersonclinton/internal/domain/entities"
 )
 
 type LogRepositoryInterface interface {
-	Append(entity.Log)
-	Get(int) (entity.Log, bool)
+	Append(entities.Log)
+	Get(int) (entities.Log, bool)
 	Delete(int)
-	GetLastLog() (entity.Log, bool)
+	GetLastLog() (entities.Log, bool)
 	FindLogIndex(int) int
 	DeleteLogsFromIndex(int)
 }
 
 type LogRepository struct {
 	lastIndex int
-	buffer    map[int]entity.Log
+	buffer    map[int]entities.Log
 }
 
 func NewLogRepository() *LogRepository {
 	return &LogRepository{
 		lastIndex: 0,
-		buffer:    make(map[int]entity.Log),
+		buffer:    make(map[int]entities.Log),
 	}
 }
 
-func (l *LogRepository) Append(value entity.Log) {
+func (l *LogRepository) Append(value entities.Log) {
 	l.lastIndex++
 	l.buffer[l.lastIndex] = value
 }
 
-func (l *LogRepository) Get(key int) (entity.Log, bool) {
+func (l *LogRepository) Get(key int) (entities.Log, bool) {
+	if key < 0 || key > l.lastIndex {
+		return entities.Log{}, false
+	}
 	value, exists := l.buffer[key]
 	return value, exists
 }
@@ -43,7 +46,7 @@ func (l *LogRepository) GetLastIndex() int {
 	return l.lastIndex
 }
 
-func (l *LogRepository) GetLastLog() (entity.Log, bool) {
+func (l *LogRepository) GetLastLog() (entities.Log, bool) {
 	value, exists := l.buffer[l.lastIndex]
 	return value, exists
 }

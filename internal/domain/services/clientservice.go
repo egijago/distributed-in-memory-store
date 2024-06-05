@@ -3,18 +3,18 @@ package services
 import (
 	"if3230-tubes-williamjeffersonclinton/internal/domain/dtos"
 	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
-	"if3230-tubes-williamjeffersonclinton/internal/domain/repository"
+	"if3230-tubes-williamjeffersonclinton/internal/domain/repositories"
 	// "if3230-tubes-williamjeffersonclinton/internal/utils"
 )
 
 type ClientService struct {
 	lastApplied   int
 	currentTerm   int
-	kvRepository  repository.KeyValueRepositoryInterface
-	logRepository repository.LogRepositoryInterface
+	kvRepository  repositories.KeyValueRepositoryInterface
+	logRepository repositories.LogRepositoryInterface
 }
 
-func NewClientService(kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface) *ClientService {
+func NewClientService(kvRepository repositories.KeyValueRepositoryInterface, logRepository repositories.LogRepositoryInterface) *ClientService {
 	return &ClientService{
 		kvRepository:  kvRepository,
 		logRepository: logRepository,
@@ -22,8 +22,6 @@ func NewClientService(kvRepository repository.KeyValueRepositoryInterface, logRe
 }
 
 func (k *ClientService) Set(request dtos.ClientSetRequest) (response *dtos.ClientSetResponse) {
-
-	// if its a leader
 	newLog := entity.Log{
 		Index:   k.lastApplied,
 		Command: "set " + request.Key + " " + request.Value,

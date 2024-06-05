@@ -1,8 +1,8 @@
 package main
 
 import (
-	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
-	repository "if3230-tubes-williamjeffersonclinton/internal/domain/repository"
+	"if3230-tubes-williamjeffersonclinton/internal/domain/entities"
+	repository "if3230-tubes-williamjeffersonclinton/internal/domain/repositories"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/services"
 	"if3230-tubes-williamjeffersonclinton/internal/interfaces/grpc/handlers"
 	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
@@ -17,7 +17,6 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
-
 )
 
 func requestLogger(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
@@ -57,11 +56,21 @@ func main() {
 
 	kvRepository := repository.NewKeyValueRepository()
 	logRepository := repository.NewLogRepository()
+	
 	var raftService *services.RaftService = nil
+
+	state := entities.NewState(
+		*entities.NewAddress("localhost", *grpcPort),
+		3000,
+		3000,
+	)
+
 	if *masterPort == "" {
-		raftService = services.NewRaftLeaderService(*entity.NewAddress("localhost", *grpcPort), kvRepository, logRepository)
+		self := entities.NewRaftClient(*entities.NewAddress("localhost", *grpcPort))
+		state.Members = append(state.Members, *self)
+		raftService = services.NewRaftLeaderService(*state, kvRepository, logRepository)
 	} else {
-		raftService = services.NewRaftFollowerService(*entity.NewAddress("localhost", *grpcPort), kvRepository, logRepository, entity.Address{Host: "localhost", Port: *masterPort})
+		raftService = services.NewRaftFollowerService(*state, kvRepository, logRepository, entities.Address{Host: "localhost", Port: *masterPort})
 	}
 	clientService := services.NewClientService(kvRepository, logRepository)
 

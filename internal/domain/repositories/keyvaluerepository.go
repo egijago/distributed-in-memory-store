@@ -1,4 +1,4 @@
-package repository
+package repositories
 
 type KeyValueRepositoryInterface interface {
 	Set(string, string)
