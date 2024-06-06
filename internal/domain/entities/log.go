@@ -14,14 +14,14 @@ type Log struct {
 func (l *Log) Parse() (string, string, string) {
 	words := strings.Fields(l.Command)
 	command := words[0]
-	key := words[1]
+	arg1 := words[1]
 
-	value := ""
+	arg2 := ""
 	if len(words) > 2 {
-		value = words[2]
+		arg2 = words[2]
 	}
 
-	return command, key, value
+	return command, arg1, arg2
 }
 
 // func (l *Log) GetKeyValue() (string, string) {

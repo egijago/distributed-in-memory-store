@@ -13,7 +13,7 @@ import (
 )
 
 type RaftService struct {
-	state entities.State
+	state  entities.State
 	caller clients.RaftClientCaller
 
 	logRepository repository.LogRepositoryInterface
@@ -28,9 +28,9 @@ type RaftService struct {
 
 func NewRaftService(state entities.State, kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface) *RaftService {
 	return &RaftService{
-		state:         state,
+		state: state,
 
-		caller : &clients.RaftClientCallerImpl{},
+		caller: &clients.RaftClientCallerImpl{},
 
 		logRepository: logRepository,
 		kvRepository:  kvRepository,
@@ -47,7 +47,7 @@ func NewRaftLeaderService(state entities.State, kvRepository repository.KeyValue
 	return service
 }
 
-func NewRaftFollowerService(state entities.State, kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface, masterAddress entities.Address) *RaftService {	
+func NewRaftFollowerService(state entities.State, kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface, masterAddress entities.Address) *RaftService {
 	service := NewRaftService(state, kvRepository, logRepository)
 
 	master := entities.NewRaftClient(masterAddress)
@@ -68,7 +68,6 @@ func NewRaftFollowerService(state entities.State, kvRepository repository.KeyVal
 		utils.Print(addrString, ",")
 	}
 	utils.Print("\n")
-
 
 	go service.startHeartbeatListener()
 	return service
@@ -103,14 +102,14 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 		utils.LogInfo("HUAHAHA")
 		log, success := k.logRepository.Get(request.PrevLogIndex)
 		if !success || log.Term != request.PrevLogTerm {
-			if (!success) {
+			if !success {
 				utils.LogInfo("HOHO")
 			}
 			utils.LogInfo("LOG TERM")
 			utils.LogInfo(log.Term)
 			utils.LogInfo("PREV LOG TERM")
 			utils.LogInfo(request.PrevLogTerm)
-			
+
 			if log.Term != request.PrevLogTerm {
 				utils.LogInfo("HIHI")
 			}
@@ -151,7 +150,7 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 		}
 	}
 
-	if (k.state.CommitIndex < request.LeaderCommit) {
+	if k.state.CommitIndex < request.LeaderCommit {
 		/* Execute every command from commitIndex + 1 to leaderCommit index */
 		for i := k.state.CommitIndex + 1; i <= request.LeaderCommit; i++ {
 			// Get log
@@ -159,14 +158,12 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 
 			if ok {
 				k.state.CommitIndex++
-				// Get parsed words from log to differentiate commands
 				command, arg1, arg2 := log.Parse()
-				utils.LogInfo(command)
-				if (command != "mem") { 	/* Regular commands */
-					k.kvRepository.ExecuteCommand(log)
-				} else {				 	/* Add Member */
+				if command == "mem" {
+					k.state.AddMember(entities.Address{Host: arg1, Port: arg2})
+				} else { /* Add Member */
 					utils.LogInfo("Add Member")
-					k.state.AddMember(entities.Address{ Host: arg1, Port: arg2 })
+					k.kvRepository.Execute(command, arg1, arg2)
 				}
 			}
 		}
@@ -228,9 +225,9 @@ func (k *RaftService) ApplyMembership(request dtos.RaftApplyMembershipRequest) (
 
 	/* Log for Add Member Command */
 	log := entities.Log{
-		Index: k.logRepository.GetLastIndex() + 1,
+		Index:   k.logRepository.GetLastIndex() + 1,
 		Command: "mem " + request.Address.Host + " " + request.Address.Port,
-		Term: k.state.CurrentTerm,
+		Term:    k.state.CurrentTerm,
 	}
 
 	k.logRepository.Append(log)
@@ -289,14 +286,12 @@ func (k *RaftService) sendEntriesToAllMembers() {
 	countAgree := 0
 	var mutex sync.Mutex
 
-	
-
 	for id, member := range k.state.Members {
 		if id == k.state.Id {
 			utils.LogInfo("[HEARTBEAT] Skip sending heartbeat to self")
 			continue
 		}
-		prevLog, found := k.logRepository.Get(member.NextIndex - 1)	
+		prevLog, found := k.logRepository.Get(member.NextIndex - 1)
 
 		prevLogIndex := constants.INVALID_ID
 		prevLogTerm := constants.INVALID_ID
@@ -314,8 +309,8 @@ func (k *RaftService) sendEntriesToAllMembers() {
 		var i int
 		for i = member.NextIndex; i <= k.logRepository.GetLastIndex(); i++ {
 			entries = append(entries, logMap[i])
-		} 
-		
+		}
+
 		wg.Add(1)
 		go func(member entities.RaftClient) {
 			defer wg.Done()

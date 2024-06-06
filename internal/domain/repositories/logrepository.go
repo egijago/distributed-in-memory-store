@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"if3230-tubes-williamjeffersonclinton/internal/domain/entities"
-	"if3230-tubes-williamjeffersonclinton/internal/utils"
 )
 
 type LogRepositoryInterface interface {
@@ -39,9 +38,6 @@ func (l *LogRepository) Append(value entities.Log) {
 
 func (l *LogRepository) Get(idx int) (entities.Log, bool) {
 	if idx < 0 || idx > l.lastIndex {
-		utils.LogInfo(l.lastIndex)
-		utils.LogInfo("HOHOSSSSS")
-		
 		return entities.Log{}, false
 	}
 
