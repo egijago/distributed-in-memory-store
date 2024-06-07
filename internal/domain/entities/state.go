@@ -3,6 +3,7 @@ package entities
 import (
 	"if3230-tubes-williamjeffersonclinton/internal/domain/constants"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -30,6 +31,11 @@ type State struct {
 
 	HeartbeatInterval time.Duration
 	HeartbeatTimeout  time.Duration
+
+	// Mutexes
+	roleMutex        sync.RWMutex
+	currentTermMutex sync.RWMutex
+	votedForMutex    sync.RWMutex
 }
 
 func NewState(address Address, electionTimeout int, heartbeatInterval int) *State {
@@ -63,4 +69,40 @@ func (k *State) AddMember(address Address) (success bool) {
 	k.Members = append(k.Members, *newMember)
 
 	return true
+}
+
+func (k *State) SetRole(role int) {
+	k.roleMutex.Lock()
+	k.Role = role
+	k.roleMutex.Unlock()
+}
+
+func (k *State) GetRole() int {
+	k.roleMutex.RLock()
+	defer k.roleMutex.RUnlock()
+	return k.Role
+}
+
+func (k *State) SetCurrentTerm(term int) {
+	k.currentTermMutex.Lock()
+	k.CurrentTerm = term
+	k.currentTermMutex.Unlock()
+}
+
+func (k *State) GetCurrentTerm() int {
+	k.currentTermMutex.RLock()
+	defer k.currentTermMutex.RUnlock()
+	return k.CurrentTerm
+}
+
+func (k *State) SetVotedFor(vote int) {
+	k.votedForMutex.Lock()
+	k.VotedFor = vote
+	k.votedForMutex.Unlock()
+}
+
+func (k *State) GetVotedFor() int {
+	k.votedForMutex.RLock()
+	defer k.votedForMutex.RUnlock()
+	return k.VotedFor
 }

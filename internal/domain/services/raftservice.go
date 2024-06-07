@@ -14,7 +14,8 @@ import (
 )
 
 type RaftService struct {
-	state  entities.State
+	state entities.State
+
 	caller clients.RaftClientCaller
 
 	logRepository repository.LogRepositoryInterface
@@ -23,8 +24,6 @@ type RaftService struct {
 	heartbeatRcvStop  chan struct{}
 	heartbeatRcvReset chan struct{}
 	heartbeatSendStop chan struct{}
-
-	roleMutex sync.Mutex // TODO: Implement mutex for role
 }
 
 func NewRaftService(state entities.State, kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface) *RaftService {
@@ -183,9 +182,19 @@ func (k *RaftService) RequestVote(request dtos.RaftRequestVoteRequest) (response
 
 	utils.LogInfo("[VOTE] getting vote request from candidate ", request.CandidateId, "(", k.state.Members[request.CandidateId].Address.String(), ")")
 	lastLog, _ := k.logRepository.GetLastLog()
-	/* Reply false if term < CurrentTerm or candidate's log is not as up-to-date as the receiver's log */
-	if request.Term < k.state.CurrentTerm ||
-		request.LastLogTerm < lastLog.Term ||
+
+	/* Reply false if term < CurrentTerm */
+	if request.Term < k.state.CurrentTerm {
+		return &dtos.RaftRequestVoteResponse{
+			Term:        k.state.CurrentTerm,
+			VoteGranted: false,
+		}
+	}
+
+	k.state.CurrentTerm = request.Term
+
+	/*  Reply false if candidate's log is not as up-to-date as the receiver's log */
+	if request.LastLogTerm < lastLog.Term ||
 		request.LastLogIndex < lastLog.Index {
 		return &dtos.RaftRequestVoteResponse{
 			Term:        k.state.CurrentTerm,
