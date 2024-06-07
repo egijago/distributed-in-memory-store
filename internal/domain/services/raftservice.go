@@ -113,25 +113,9 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 		Reply false if log doesn’t contain an entry at prevLogIndex whose term matches prevLogTerm.
 		Leader must retry with lower index.
 	*/
-	utils.LogInfo("PREV LOG IDX")
-	utils.LogInfo(request.PrevLogIndex)
 	if request.PrevLogIndex != constants.INVALID_ID {
-		// TODO: remove debug lines
-		utils.LogInfo(request.PrevLogIndex)
-		utils.LogInfo("HUAHAHA")
 		log, success := k.logRepository.Get(request.PrevLogIndex)
 		if !success || log.Term != request.PrevLogTerm {
-			if !success {
-				utils.LogInfo("HOHO")
-			}
-			utils.LogInfo("LOG TERM")
-			utils.LogInfo(log.Term)
-			utils.LogInfo("PREV LOG TERM")
-			utils.LogInfo(request.PrevLogTerm)
-
-			if log.Term != request.PrevLogTerm {
-				utils.LogInfo("HIHI")
-			}
 			utils.LogInfo("[APPEND] Aborted: log doesn’t contain an entry at prevLogIndex whose term matches prevLogTerm")
 			return &dtos.RaftAppendEntriesResponse{
 				Term:    k.state.CurrentTerm,
@@ -199,7 +183,6 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 	utils.LogInfo(k.state.Members)
 
 	utils.LogInfo("[APPEND] Agree to append entries")
-	utils.LogInfo(k.logRepository.GetLastIndex())
 	return &dtos.RaftAppendEntriesResponse{
 		Term:    k.state.CurrentTerm,
 		Success: true,
@@ -207,7 +190,8 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 }
 
 func (k *RaftService) RequestVote(request dtos.RaftRequestVoteRequest) (response *dtos.RaftRequestVoteResponse) {
-	k.heartbeatRcvStop <- struct{}{}
+	// k.heartbeatRcvStop <- struct{}{}
+	k.heartbeatRcvReset <- struct{}{}
 
 	utils.LogInfo("[VOTE] getting vote request from candidate ", request.CandidateId, "(", k.state.Members[request.CandidateId].Address.String(), ")")
 	lastLog, _ := k.logRepository.GetLastLog()
@@ -290,10 +274,9 @@ func (k *RaftService) startHeartbeatEmitter() {
 			utils.LogInfo("MEMBERS:")
 			utils.LogInfo(k.state.Members)
 
-			utils.LogInfo(k.logRepository.GetLastIndex())
 			lastLog, _ := k.logRepository.GetLastLog()
 
-			utils.LogInfo(lastLog.Index)
+			utils.LogInfo("Last log index ", lastLog.Index)
 			k.sendEntriesToAllMembers()
 			time.Sleep(k.state.HeartbeatInterval)
 		}
@@ -406,8 +389,6 @@ func (k *RaftService) initializeVoting() {
 	countAgree := 1
 	var mutex sync.Mutex
 
-	utils.LogInfo("State ID:", k.state.Id)
-
 	/* Display members for testing purpose */
 	utils.LogInfo("MEMBERS:")
 	utils.LogInfo(k.state.Members)
@@ -455,7 +436,6 @@ func (k *RaftService) initializeVoting() {
 
 	// 150 - 300 ms
 	if countAgree > len(k.state.Members)/2 {
-		utils.LogInfo(len(k.state.Members))
 		utils.Println("[ELECTION] count agree > majority, start serving as a leader", countAgree)
 		go k.startHeartbeatEmitter()
 	} else {

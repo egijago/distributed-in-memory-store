@@ -40,8 +40,9 @@ type State struct {
 
 func NewState(address Address, electionTimeout int, heartbeatInterval int) *State {
 	rand.Seed(time.Now().UnixNano())
-	randomInt := rand.Intn(500)
-	heartbeatTimeout := heartbeatInterval + 100 + randomInt
+	/* 150 - 300 */
+	randomInt := rand.Intn(600)
+	heartbeatTimeout := heartbeatInterval + 200 + randomInt
 	return &State{
 		Id:       0,
 		Members:  []RaftClient{},
