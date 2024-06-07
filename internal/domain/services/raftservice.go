@@ -43,6 +43,18 @@ func NewRaftService(state entities.State, kvRepository repository.KeyValueReposi
 
 func NewRaftLeaderService(state entities.State, kvRepository repository.KeyValueRepositoryInterface, logRepository repository.LogRepositoryInterface) *RaftService {
 	service := NewRaftService(state, kvRepository, logRepository)
+
+	/* Add log for leader */
+	log := entities.Log{
+		Index:   service.logRepository.GetLastIndex() + 1,
+		Command: "mem " + state.Address.Host + " " + state.Address.Port,
+		Term:    service.state.CurrentTerm,
+	}
+
+	service.logRepository.Append(log)
+
+	
+
 	go service.startHeartbeatEmitter()
 	return service
 }
@@ -67,7 +79,13 @@ func NewRaftFollowerService(state entities.State, kvRepository repository.KeyVal
 		addrString := (&addr).String
 		utils.Print(addrString, ",")
 	}
+	
+	/* Binding */
+	service.state.Members = members
 	utils.Print("\n")
+
+	/* Update state id */
+	service.state.Id = response.Id
 
 	go service.startHeartbeatListener()
 	return service
@@ -98,6 +116,7 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 	utils.LogInfo("PREV LOG IDX")
 	utils.LogInfo(request.PrevLogIndex)
 	if request.PrevLogIndex != constants.INVALID_ID {
+		// TODO: remove debug lines
 		utils.LogInfo(request.PrevLogIndex)
 		utils.LogInfo("HUAHAHA")
 		log, success := k.logRepository.Get(request.PrevLogIndex)
@@ -133,41 +152,51 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 				// Append the new log
 				k.logRepository.Append(newLog)
 
-				//  If leaderCommit > CommitIndex, set CommitIndex = min(leaderCommit, index of last new entry)
-				if request.LeaderCommit > k.state.CommitIndex {
-					k.state.CommitIndex = min(request.LeaderCommit, newLog.Index)
-				}
+				// //  If leaderCommit > CommitIndex, set CommitIndex = min(leaderCommit, index of last new entry)
+				// if request.LeaderCommit > k.state.CommitIndex {
+				// 	k.state.CommitIndex = min(request.LeaderCommit, newLog.Index)
+				// }
 			}
 		} else {
 			utils.LogInfo("No conflict")
 			// No conflict, append the new log
 			k.logRepository.Append(newLog)
-
-			//  If leaderCommit > CommitIndex, set CommitIndex = min(leaderCommit, index of last new entry)
-			if request.LeaderCommit > k.state.CommitIndex {
-				k.state.CommitIndex = min(request.LeaderCommit, newLog.Index)
-			}
+			
 		}
 	}
 
+	utils.LogInfo("CommitIndex: ", k.state.CommitIndex, "; LeaderCommit: ", request.LeaderCommit);
 	if k.state.CommitIndex < request.LeaderCommit {
 		/* Execute every command from commitIndex + 1 to leaderCommit index */
-		for i := k.state.CommitIndex + 1; i <= request.LeaderCommit; i++ {
+		/* Past Commit Index */
+		startIdx := k.state.CommitIndex + 1
+
+		// If leaderCommit > CommitIndex, set CommitIndex = min(leaderCommit, index of last new entry)
+		/* Up to date Commit Index */
+		k.state.CommitIndex = min(request.LeaderCommit, request.Entries[len(request.Entries) - 1].Index)
+		utils.LogInfo("Updated commit index: ", k.state.CommitIndex)
+
+		for i := startIdx; i <= k.state.CommitIndex; i++ {
 			// Get log
 			log, ok := k.logRepository.Get(i)
-
+			
 			if ok {
-				k.state.CommitIndex++
+				// k.state.CommitIndex++
 				command, arg1, arg2 := log.Parse()
 				if command == "mem" {
+					utils.LogInfo("[COMMIT] Add member ", arg1,":", arg2)
 					k.state.AddMember(entities.Address{Host: arg1, Port: arg2})
-				} else { /* Add Member */
-					utils.LogInfo("Add Member")
+				} else { 
+					utils.LogInfo("[COMMIT] Execute command ", command,arg1, arg2)
 					k.kvRepository.Execute(command, arg1, arg2)
 				}
 			}
 		}
 	}
+
+	/* Display members for testing purpose */
+	utils.LogInfo("MEMBERS:")
+	utils.LogInfo(k.state.Members)
 
 	utils.LogInfo("[APPEND] Agree to append entries")
 	utils.LogInfo(k.logRepository.GetLastIndex())
@@ -225,13 +254,13 @@ func (k *RaftService) ApplyMembership(request dtos.RaftApplyMembershipRequest) (
 	/* Append member to existing members */
 	k.state.Members = append(k.state.Members, *entities.NewRaftClient(request.Address))
 
-	memberAddresses := []entities.Address{}
-	utils.Print("Current members: ")
-	for _, member := range k.state.Members {
-		utils.Print(member.Address.String(), ",")
-		memberAddresses = append(memberAddresses, member.Address)
-	}
-	utils.Print("\n")
+	// memberAddresses := []entities.Address{}
+	// utils.Print("Current members: ")
+	// for _, member := range k.state.Members {
+	// 	utils.Print(member.Address.String(), ",")
+	// 	memberAddresses = append(memberAddresses, member.Address)
+	// }
+	// utils.Print("\n")
 
 	/* Log for Add Member Command */
 	log := entities.Log{
@@ -244,7 +273,7 @@ func (k *RaftService) ApplyMembership(request dtos.RaftApplyMembershipRequest) (
 
 	return &dtos.RaftApplyMembershipResponse{
 		Id:      len(k.state.Members) - 1,
-		Members: memberAddresses,
+		Members: []entities.Address{},
 		Term:    k.state.CurrentTerm,
 		Success: true,
 	}
@@ -257,6 +286,10 @@ func (k *RaftService) startHeartbeatEmitter() {
 			return
 		default:
 			utils.LogInfo("[HEARTBEAT] Sending heartbeat...")
+			/* Display members for testing purpose */
+			utils.LogInfo("MEMBERS:")
+			utils.LogInfo(k.state.Members)
+
 			utils.LogInfo(k.logRepository.GetLastIndex())
 			lastLog, _ := k.logRepository.GetLastLog()
 
@@ -279,7 +312,7 @@ func (k *RaftService) startHeartbeatListener() {
 			return
 		case <-timer.C:
 			utils.LogInfo("[HEARTBEAT] Heartbeat timeout, start voting...")
-			k.initializeVoting()
+			go k.initializeVoting()
 			timer.Reset(k.state.HeartbeatTimeout)
 			return
 		case <-k.heartbeatRcvReset:
@@ -293,7 +326,7 @@ func (k *RaftService) startHeartbeatListener() {
 
 func (k *RaftService) sendEntriesToAllMembers() {
 	var wg sync.WaitGroup
-	countAgree := 0
+	countAgree := 1
 	var mutex sync.Mutex
 
 	for id, member := range k.state.Members {
@@ -352,11 +385,19 @@ func (k *RaftService) sendEntriesToAllMembers() {
 	if countAgree > len(k.state.Members)/2 {
 		utils.LogInfo("Success commit")
 		k.state.CommitIndex = k.logRepository.GetLastIndex()
+		// for log in k.logRepository {
+
+		// }
 	}
 }
 
 func (k *RaftService) initializeVoting() {
 	utils.Println("[ELECTION] Initialize voting")
+	/* Display members for testing purpose */
+	utils.LogInfo("MEMBERS:")
+	utils.LogInfo(k.state.Members)
+
+
 	k.state.CurrentTerm++
 	k.state.VotedFor = k.state.Id
 	k.state.Role = constants.NODE_ROLE_CANDIDATE
@@ -364,14 +405,21 @@ func (k *RaftService) initializeVoting() {
 	var wg sync.WaitGroup
 	countAgree := 1
 	var mutex sync.Mutex
+
+	utils.LogInfo("State ID:", k.state.Id)
+
+	/* Display members for testing purpose */
+	utils.LogInfo("MEMBERS:")
+	utils.LogInfo(k.state.Members)
+
 	for id, member := range k.state.Members {
 		if id == k.state.Id {
-			continue
+			continue		
 		}
 		wg.Add(1)
-		go func(member entities.RaftClient) {
+		go func(member entities.RaftClient, id int) {
 			defer wg.Done()
-
+			utils.LogInfo("Sending to:", id)
 			lastLog, found := k.logRepository.GetLastLog()
 			var lastLogIndex int
 			var lastLogTerm int
@@ -394,11 +442,12 @@ func (k *RaftService) initializeVoting() {
 				return
 			}
 			if resp.VoteGranted {
+				utils.LogInfo("Ack from:", id)
 				mutex.Lock()
 				countAgree++
 				mutex.Unlock()
 			}
-		}(member)
+		}(member, id)
 	}
 
 	wg.Wait()

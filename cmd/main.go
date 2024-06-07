@@ -23,7 +23,7 @@ func requestLogger(ctx context.Context, req interface{}, info *grpc.UnaryServerI
 	p, ok := peer.FromContext(ctx)
 	if ok {
 		addr := p.Addr
-		log.Printf("Received request: %s from %s", info.FullMethod, addr.String())
+		log.Printf("Received request: %s from %s with local addr %s", info.FullMethod, addr.String(), p.LocalAddr.String())
 	} else {
 		log.Printf("Received request: %s", info.FullMethod)
 	}

@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"if3230-tubes-williamjeffersonclinton/internal/domain/constants"
 	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
 	"log"
 
@@ -15,8 +16,6 @@ type RaftClient struct {
 	ProtoClient pb.RaftServiceClient
 }
 
-
-
 func NewRaftClient(address Address) *RaftClient {
 	conn, err := grpc.NewClient(address.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -25,7 +24,7 @@ func NewRaftClient(address Address) *RaftClient {
 	return &RaftClient{
 		Address:     address,
 		ProtoClient: pb.NewRaftServiceClient(conn),
-		NextIndex:   0,
-		MatchIndex:  0,
+		NextIndex:   constants.INVALID_ID,
+		MatchIndex:  constants.INVALID_ID,
 	}
 }
