@@ -15,6 +15,8 @@ type RaftClient struct {
 	ProtoClient pb.RaftServiceClient
 }
 
+
+
 func NewRaftClient(address Address) *RaftClient {
 	conn, err := grpc.NewClient(address.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

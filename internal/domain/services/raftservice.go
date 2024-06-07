@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"if3230-tubes-williamjeffersonclinton/internal/clients"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/constants"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/dtos"
@@ -30,7 +31,7 @@ func NewRaftService(state entities.State, kvRepository repository.KeyValueReposi
 	return &RaftService{
 		state: state,
 
-		caller: &clients.RaftClientCallerImpl{},
+		caller: clients.NewRaftClientCaller(context.Background()),
 
 		logRepository: logRepository,
 		kvRepository:  kvRepository,
