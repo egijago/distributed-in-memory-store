@@ -707,7 +707,9 @@ proto.client.ClientGetResponse.prototype.toObject = function(opt_includeInstance
  */
 proto.client.ClientGetResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFieldWithDefault(msg, 1, "")
+    value: jspb.Message.getFieldWithDefault(msg, 1, ""),
+    success: jspb.Message.getBooleanFieldWithDefault(msg, 2, false),
+    leaderport: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -748,6 +750,14 @@ proto.client.ClientGetResponse.deserializeBinaryFromReader = function(msg, reade
       var value = /** @type {string} */ (reader.readString());
       msg.setValue(value);
       break;
+    case 2:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setSuccess(value);
+      break;
+    case 3:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setLeaderport(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -784,6 +794,20 @@ proto.client.ClientGetResponse.serializeBinaryToWriter = function(message, write
       f
     );
   }
+  f = message.getSuccess();
+  if (f) {
+    writer.writeBool(
+      2,
+      f
+    );
+  }
+  f = message.getLeaderport();
+  if (f.length > 0) {
+    writer.writeString(
+      3,
+      f
+    );
+  }
 };
 
 
@@ -802,6 +826,42 @@ proto.client.ClientGetResponse.prototype.getValue = function() {
  */
 proto.client.ClientGetResponse.prototype.setValue = function(value) {
   return jspb.Message.setProto3StringField(this, 1, value);
+};
+
+
+/**
+ * optional bool success = 2;
+ * @return {boolean}
+ */
+proto.client.ClientGetResponse.prototype.getSuccess = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 2, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.client.ClientGetResponse} returns this
+ */
+proto.client.ClientGetResponse.prototype.setSuccess = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 2, value);
+};
+
+
+/**
+ * optional string leaderPort = 3;
+ * @return {string}
+ */
+proto.client.ClientGetResponse.prototype.getLeaderport = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.client.ClientGetResponse} returns this
+ */
+proto.client.ClientGetResponse.prototype.setLeaderport = function(value) {
+  return jspb.Message.setProto3StringField(this, 3, value);
 };
 
 
@@ -997,7 +1057,8 @@ proto.client.ClientSetResponse.prototype.toObject = function(opt_includeInstance
  */
 proto.client.ClientSetResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    message: jspb.Message.getFieldWithDefault(msg, 1, "")
+    success: jspb.Message.getBooleanFieldWithDefault(msg, 1, false),
+    leaderport: jspb.Message.getFieldWithDefault(msg, 2, "")
   };
 
   if (includeInstance) {
@@ -1035,8 +1096,12 @@ proto.client.ClientSetResponse.deserializeBinaryFromReader = function(msg, reade
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setSuccess(value);
+      break;
+    case 2:
       var value = /** @type {string} */ (reader.readString());
-      msg.setMessage(value);
+      msg.setLeaderport(value);
       break;
     default:
       reader.skipField();
@@ -1067,10 +1132,17 @@ proto.client.ClientSetResponse.prototype.serializeBinary = function() {
  */
 proto.client.ClientSetResponse.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getMessage();
+  f = message.getSuccess();
+  if (f) {
+    writer.writeBool(
+      1,
+      f
+    );
+  }
+  f = message.getLeaderport();
   if (f.length > 0) {
     writer.writeString(
-      1,
+      2,
       f
     );
   }
@@ -1078,11 +1150,29 @@ proto.client.ClientSetResponse.serializeBinaryToWriter = function(message, write
 
 
 /**
- * optional string message = 1;
+ * optional bool success = 1;
+ * @return {boolean}
+ */
+proto.client.ClientSetResponse.prototype.getSuccess = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 1, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.client.ClientSetResponse} returns this
+ */
+proto.client.ClientSetResponse.prototype.setSuccess = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 1, value);
+};
+
+
+/**
+ * optional string leaderPort = 2;
  * @return {string}
  */
-proto.client.ClientSetResponse.prototype.getMessage = function() {
-  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 1, ""));
+proto.client.ClientSetResponse.prototype.getLeaderport = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
 };
 
 
@@ -1090,8 +1180,8 @@ proto.client.ClientSetResponse.prototype.getMessage = function() {
  * @param {string} value
  * @return {!proto.client.ClientSetResponse} returns this
  */
-proto.client.ClientSetResponse.prototype.setMessage = function(value) {
-  return jspb.Message.setProto3StringField(this, 1, value);
+proto.client.ClientSetResponse.prototype.setLeaderport = function(value) {
+  return jspb.Message.setProto3StringField(this, 2, value);
 };
 
 
@@ -1257,7 +1347,9 @@ proto.client.ClientStrlnResponse.prototype.toObject = function(opt_includeInstan
  */
 proto.client.ClientStrlnResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    length: jspb.Message.getFieldWithDefault(msg, 1, 0)
+    length: jspb.Message.getFieldWithDefault(msg, 1, 0),
+    success: jspb.Message.getBooleanFieldWithDefault(msg, 2, false),
+    leaderport: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -1298,6 +1390,14 @@ proto.client.ClientStrlnResponse.deserializeBinaryFromReader = function(msg, rea
       var value = /** @type {number} */ (reader.readInt32());
       msg.setLength(value);
       break;
+    case 2:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setSuccess(value);
+      break;
+    case 3:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setLeaderport(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -1334,6 +1434,20 @@ proto.client.ClientStrlnResponse.serializeBinaryToWriter = function(message, wri
       f
     );
   }
+  f = message.getSuccess();
+  if (f) {
+    writer.writeBool(
+      2,
+      f
+    );
+  }
+  f = message.getLeaderport();
+  if (f.length > 0) {
+    writer.writeString(
+      3,
+      f
+    );
+  }
 };
 
 
@@ -1352,6 +1466,42 @@ proto.client.ClientStrlnResponse.prototype.getLength = function() {
  */
 proto.client.ClientStrlnResponse.prototype.setLength = function(value) {
   return jspb.Message.setProto3IntField(this, 1, value);
+};
+
+
+/**
+ * optional bool success = 2;
+ * @return {boolean}
+ */
+proto.client.ClientStrlnResponse.prototype.getSuccess = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 2, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.client.ClientStrlnResponse} returns this
+ */
+proto.client.ClientStrlnResponse.prototype.setSuccess = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 2, value);
+};
+
+
+/**
+ * optional string leaderPort = 3;
+ * @return {string}
+ */
+proto.client.ClientStrlnResponse.prototype.getLeaderport = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.client.ClientStrlnResponse} returns this
+ */
+proto.client.ClientStrlnResponse.prototype.setLeaderport = function(value) {
+  return jspb.Message.setProto3StringField(this, 3, value);
 };
 
 
@@ -1517,7 +1667,9 @@ proto.client.ClientDelResponse.prototype.toObject = function(opt_includeInstance
  */
 proto.client.ClientDelResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFieldWithDefault(msg, 1, "")
+    value: jspb.Message.getFieldWithDefault(msg, 1, ""),
+    success: jspb.Message.getBooleanFieldWithDefault(msg, 2, false),
+    leaderport: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -1558,6 +1710,14 @@ proto.client.ClientDelResponse.deserializeBinaryFromReader = function(msg, reade
       var value = /** @type {string} */ (reader.readString());
       msg.setValue(value);
       break;
+    case 2:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setSuccess(value);
+      break;
+    case 3:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setLeaderport(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -1594,6 +1754,20 @@ proto.client.ClientDelResponse.serializeBinaryToWriter = function(message, write
       f
     );
   }
+  f = message.getSuccess();
+  if (f) {
+    writer.writeBool(
+      2,
+      f
+    );
+  }
+  f = message.getLeaderport();
+  if (f.length > 0) {
+    writer.writeString(
+      3,
+      f
+    );
+  }
 };
 
 
@@ -1612,6 +1786,42 @@ proto.client.ClientDelResponse.prototype.getValue = function() {
  */
 proto.client.ClientDelResponse.prototype.setValue = function(value) {
   return jspb.Message.setProto3StringField(this, 1, value);
+};
+
+
+/**
+ * optional bool success = 2;
+ * @return {boolean}
+ */
+proto.client.ClientDelResponse.prototype.getSuccess = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 2, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.client.ClientDelResponse} returns this
+ */
+proto.client.ClientDelResponse.prototype.setSuccess = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 2, value);
+};
+
+
+/**
+ * optional string leaderPort = 3;
+ * @return {string}
+ */
+proto.client.ClientDelResponse.prototype.getLeaderport = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.client.ClientDelResponse} returns this
+ */
+proto.client.ClientDelResponse.prototype.setLeaderport = function(value) {
+  return jspb.Message.setProto3StringField(this, 3, value);
 };
 
 
@@ -1807,7 +2017,9 @@ proto.client.ClientAppendResponse.prototype.toObject = function(opt_includeInsta
  */
 proto.client.ClientAppendResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    value: jspb.Message.getFieldWithDefault(msg, 1, "")
+    value: jspb.Message.getFieldWithDefault(msg, 1, ""),
+    success: jspb.Message.getBooleanFieldWithDefault(msg, 2, false),
+    leaderport: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -1848,6 +2060,14 @@ proto.client.ClientAppendResponse.deserializeBinaryFromReader = function(msg, re
       var value = /** @type {string} */ (reader.readString());
       msg.setValue(value);
       break;
+    case 2:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setSuccess(value);
+      break;
+    case 3:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setLeaderport(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -1884,6 +2104,20 @@ proto.client.ClientAppendResponse.serializeBinaryToWriter = function(message, wr
       f
     );
   }
+  f = message.getSuccess();
+  if (f) {
+    writer.writeBool(
+      2,
+      f
+    );
+  }
+  f = message.getLeaderport();
+  if (f.length > 0) {
+    writer.writeString(
+      3,
+      f
+    );
+  }
 };
 
 
@@ -1902,6 +2136,42 @@ proto.client.ClientAppendResponse.prototype.getValue = function() {
  */
 proto.client.ClientAppendResponse.prototype.setValue = function(value) {
   return jspb.Message.setProto3StringField(this, 1, value);
+};
+
+
+/**
+ * optional bool success = 2;
+ * @return {boolean}
+ */
+proto.client.ClientAppendResponse.prototype.getSuccess = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 2, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.client.ClientAppendResponse} returns this
+ */
+proto.client.ClientAppendResponse.prototype.setSuccess = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 2, value);
+};
+
+
+/**
+ * optional string leaderPort = 3;
+ * @return {string}
+ */
+proto.client.ClientAppendResponse.prototype.getLeaderport = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.client.ClientAppendResponse} returns this
+ */
+proto.client.ClientAppendResponse.prototype.setLeaderport = function(value) {
+  return jspb.Message.setProto3StringField(this, 3, value);
 };
 
 

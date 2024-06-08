@@ -19,7 +19,7 @@ func (s *GrpcHandler) Get(ctx context.Context, req *pb.ClientGetRequest) (*pb.Cl
 	}
 
 	response := s.clientService.Get(request)
-	return &pb.ClientGetResponse{Value: response.Value}, nil
+	return &pb.ClientGetResponse{Value: response.Value, Success: response.Success, LeaderPort: response.LeaderPort}, nil
 }
 
 func (s *GrpcHandler) Set(ctx context.Context, req *pb.ClientSetRequest) (*pb.ClientSetResponse, error) {
@@ -29,15 +29,9 @@ func (s *GrpcHandler) Set(ctx context.Context, req *pb.ClientSetRequest) (*pb.Cl
 	}
 
 	response := s.clientService.Set(request)
-
-	var message string
-	if response.Success {
-		message = "Success"
-	} else {
-		message = "Failed"
-	}
 	return &pb.ClientSetResponse{
-		Message: message,
+		Success:    response.Success,
+		LeaderPort: response.LeaderPort,
 	}, nil
 }
 
@@ -47,7 +41,7 @@ func (s *GrpcHandler) Strln(ctx context.Context, req *pb.ClientStrlnRequest) (*p
 	}
 
 	response := s.clientService.Strln(request)
-	return &pb.ClientStrlnResponse{Length: int32(response.Length)}, nil
+	return &pb.ClientStrlnResponse{Length: int32(response.Length), Success: response.Success, LeaderPort: response.LeaderPort}, nil
 }
 
 func (s *GrpcHandler) Del(ctx context.Context, req *pb.ClientDelRequest) (*pb.ClientDelResponse, error) {
@@ -56,7 +50,7 @@ func (s *GrpcHandler) Del(ctx context.Context, req *pb.ClientDelRequest) (*pb.Cl
 	}
 
 	response := s.clientService.Delete(request)
-	return &pb.ClientDelResponse{Value: response.Value}, nil
+	return &pb.ClientDelResponse{Value: response.Value, Success: response.Success, LeaderPort: response.LeaderPort}, nil
 }
 
 func (s *GrpcHandler) Append(ctx context.Context, req *pb.ClientAppendRequest) (*pb.ClientAppendResponse, error) {

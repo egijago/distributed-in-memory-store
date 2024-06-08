@@ -15,7 +15,7 @@ service ClientService {
 }
 
 message ClientPingRequest {
-    string message = 1;
+    string message = 1; 
 }
 
 message ClientPingResponse {
@@ -28,6 +28,8 @@ message ClientGetRequest {
 
 message ClientGetResponse {
     string value = 1;
+    bool success = 2;
+    string leaderPort = 3;
 }
 
 message ClientSetRequest {
@@ -36,7 +38,8 @@ message ClientSetRequest {
 }
 
 message ClientSetResponse {
-    string message = 1;
+    bool success = 1;
+    string leaderPort = 2;
 }
 
 message ClientStrlnRequest {
@@ -45,6 +48,8 @@ message ClientStrlnRequest {
 
 message ClientStrlnResponse {
     int32 length = 1;
+    bool success = 2;
+    string leaderPort = 3;
 }
 
 message ClientDelRequest {
@@ -53,6 +58,8 @@ message ClientDelRequest {
 
 message ClientDelResponse {
     string value = 1;
+    bool success = 2;
+    string leaderPort = 3;
 }
 
 message ClientAppendRequest {
@@ -62,4 +69,6 @@ message ClientAppendRequest {
 
 message ClientAppendResponse {
     string value = 1;
+    bool success = 2;
+    string leaderPort = 3;
 }
