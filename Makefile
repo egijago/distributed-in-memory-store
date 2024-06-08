@@ -39,3 +39,9 @@ node3:
 
 node4:
 	go run cmd/main.go --grpc_port=8006 --grpc_web_port=8007 --master_port=8000
+
+node5:
+	go run cmd/main.go --grpc_port=8008 --grpc_web_port=8009 --master_port=8000
+
+node6:
+	go run cmd/main.go --grpc_port=8010 --grpc_web_port=8011 --master_port=8000
