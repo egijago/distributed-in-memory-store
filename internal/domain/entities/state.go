@@ -16,6 +16,7 @@ type State struct {
 	// Persistent State
 	CurrentTerm int
 	VotedFor    int
+	IsElecting	bool
 
 	// Volatile State
 	CommitIndex int
@@ -40,7 +41,7 @@ type State struct {
 
 func NewState(address Address, electionTimeout int, heartbeatInterval int) *State {
 	rand.Seed(time.Now().UnixNano())
-	/* 150 - 300 */
+	/* 0 - 600 */
 	randomInt := rand.Intn(600)
 	heartbeatTimeout := heartbeatInterval + 200 + randomInt
 	return &State{
@@ -51,6 +52,7 @@ func NewState(address Address, electionTimeout int, heartbeatInterval int) *Stat
 
 		CurrentTerm: constants.INVALID_TERM,
 		VotedFor:    constants.NO_VOTE,
+		IsElecting:  false,
 
 		CommitIndex: -1,
 		LastApplied: -1,

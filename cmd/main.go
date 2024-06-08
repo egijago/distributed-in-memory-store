@@ -72,7 +72,7 @@ func main() {
 	} else {
 		raftService = services.NewRaftFollowerService(*state, kvRepository, logRepository, entities.Address{Host: "localhost", Port: *masterPort})
 	}
-	clientService := services.NewClientService(kvRepository, logRepository)
+	clientService := services.NewClientService(kvRepository, logRepository, raftService)
 
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(requestLogger),

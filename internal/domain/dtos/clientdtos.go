@@ -9,6 +9,7 @@ type ClientStrlnRequest struct {
 type ClientStrlnResponse struct {
 	Length  int
 	Success bool
+	LeaderPort string
 }
 
 type ClientDeleteRequest struct {
@@ -18,6 +19,7 @@ type ClientDeleteRequest struct {
 type ClientDeleteResponse struct {
 	Value   string
 	Success bool
+	LeaderPort string
 }
 
 type ClientGetRequest struct {
@@ -27,6 +29,7 @@ type ClientGetRequest struct {
 type ClientGetResponse struct {
 	Value   string
 	Success bool
+	LeaderPort string
 }
 
 type ClientSetRequest struct {
@@ -36,6 +39,7 @@ type ClientSetRequest struct {
 
 type ClientSetResponse struct {
 	Success bool
+	LeaderPort string
 }
 
 type ClientAppendRequest struct {
@@ -46,6 +50,7 @@ type ClientAppendRequest struct {
 type ClientAppendResponse struct {
 	Value   string
 	Success bool
+	LeaderPort string
 }
 
 type ClientAddMemberRequest struct {
@@ -54,4 +59,5 @@ type ClientAddMemberRequest struct {
 
 type ClientAddMemberResponse struct {
 	Success bool
+	LeaderPort string
 }

@@ -9,22 +9,20 @@ import (
 )
 
 type RaftClientCallerImpl struct {
-	context context.Context
 }
 
 func NewRaftClientCaller(context context.Context) *RaftClientCallerImpl {
 	return &RaftClientCallerImpl{
-		context: context,
 	}
 }
 
 type RaftClientCaller interface {
-	AppendEntries(client entities.RaftClient, request dtos.RaftAppendEntriesRequest) (*dtos.RaftAppendEntriesResponse, error)
-	RequestVote(client entities.RaftClient, request dtos.RaftRequestVoteRequest) (*dtos.RaftRequestVoteResponse, error)
-	ApplyMembership(client entities.RaftClient, request dtos.RaftApplyMembershipRequest) (*dtos.RaftApplyMembershipResponse, error)
+	AppendEntries(ctx context.Context, client entities.RaftClient, request dtos.RaftAppendEntriesRequest) (*dtos.RaftAppendEntriesResponse, error)
+	RequestVote(ctx context.Context, client entities.RaftClient, request dtos.RaftRequestVoteRequest) (*dtos.RaftRequestVoteResponse, error)
+	ApplyMembership(ctx context.Context, client entities.RaftClient, request dtos.RaftApplyMembershipRequest) (*dtos.RaftApplyMembershipResponse, error)
 }
 
-func (l *RaftClientCallerImpl) AppendEntries(client entities.RaftClient, request dtos.RaftAppendEntriesRequest) (*dtos.RaftAppendEntriesResponse, error) {
+func (l *RaftClientCallerImpl) AppendEntries(ctx context.Context, client entities.RaftClient, request dtos.RaftAppendEntriesRequest) (*dtos.RaftAppendEntriesResponse, error) {
 	pbEntries := []*pb.Log{}
 	for _, entry := range request.Entries {
 		pbEntries = append(pbEntries, &pb.Log{
@@ -34,7 +32,7 @@ func (l *RaftClientCallerImpl) AppendEntries(client entities.RaftClient, request
 		})
 	}
 
-	response, err := client.ProtoClient.AppendEntries(l.context, &pb.RaftAppendEntriesRequest{
+	response, err := client.ProtoClient.AppendEntries(ctx, &pb.RaftAppendEntriesRequest{
 		Term:         int32(request.Term),
 		LeaderId:     int32(request.LeaderId),
 		PrevLogIndex: int32(request.PrevLogIndex),
@@ -53,9 +51,9 @@ func (l *RaftClientCallerImpl) AppendEntries(client entities.RaftClient, request
 	}, nil
 }
 
-func (l *RaftClientCallerImpl) RequestVote(client entities.RaftClient, request dtos.RaftRequestVoteRequest) (*dtos.RaftRequestVoteResponse, error) {
+func (l *RaftClientCallerImpl) RequestVote(ctx context.Context,client entities.RaftClient, request dtos.RaftRequestVoteRequest) (*dtos.RaftRequestVoteResponse, error) {
 
-	response, err := client.ProtoClient.RequestVote(l.context, &pb.RaftRequestVoteRequest{
+	response, err := client.ProtoClient.RequestVote(ctx, &pb.RaftRequestVoteRequest{
 		Term:         int32(request.Term),
 		CandidateId:  int32(request.CandidateId),
 		LastLogIndex: int32(request.LastLogIndex),
@@ -70,8 +68,8 @@ func (l *RaftClientCallerImpl) RequestVote(client entities.RaftClient, request d
 	}, nil
 }
 
-func (l *RaftClientCallerImpl) ApplyMembership(client entities.RaftClient, request dtos.RaftApplyMembershipRequest) (*dtos.RaftApplyMembershipResponse, error) {
-	response, err := client.ProtoClient.ApplyMembership(l.context, &pb.RaftApplyMembershipRequest{
+func (l *RaftClientCallerImpl) ApplyMembership(ctx context.Context, client entities.RaftClient, request dtos.RaftApplyMembershipRequest) (*dtos.RaftApplyMembershipResponse, error) {
+	response, err := client.ProtoClient.ApplyMembership(ctx, &pb.RaftApplyMembershipRequest{
 		Address: &pb.Address{
 			Host: request.Address.Host,
 			Port: request.Address.Port,
