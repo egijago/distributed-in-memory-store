@@ -61,3 +61,8 @@ type ClientAddMemberResponse struct {
 	Success bool
 	LeaderPort string
 }
+type ClientRequestLogResponse struct {
+	Value string
+	Success bool
+	LeaderPort string
+}

@@ -5,7 +5,8 @@ const client = proto.client
 const { ClientServiceClient } = client;
 const {
     ClientPingRequest, ClientGetRequest, ClientSetRequest,
-    ClientStrlnRequest, ClientDelRequest, ClientAppendRequest
+    ClientStrlnRequest, ClientDelRequest, ClientAppendRequest,
+    ClientRequestLogRequest
 } = client;
 
 var PORT = document.getElementById('port').value;
@@ -92,23 +93,22 @@ document.getElementById('command').addEventListener('keypress', (event) => {
                     addOutput('Error: ' + err.message, true);
                   console.error(err);
               } else {
-                  addOutput(response.getSuccess() ? 'Success' : 'Failed');
                   const leaderPort = parseInt(response.getLeaderport()) + 1;
                     if (!response.getSuccess() && leaderPort) {
                         const tmp = new proto.client.ClientServiceClient('http://localhost:' + leaderPort, null, null);
                         addOutput(`Redirect: leader at localhost:${leaderPort}`, true)
-                        tmp.get(request, {}, (err, response) => {
+                        tmp.set(request, {}, (err, response) => {
                             if (err) {
                                 addOutput('Error: ' + err.message, true);
                                 console.error(err);
                             } else {
-                                addOutput(response.getValue() ?? "Key not found");
+                                addOutput("Set success" ?? "Key not found");
                                 console.log(response.getValue());
                             }
                         });
                     } else {
                         if (response.getSuccess()) {
-                            addOutput(response.getValue());
+                            addOutput('Set success');
                         } else {
                             addOutput('Set failed', true);
                         }
@@ -124,24 +124,22 @@ document.getElementById('command').addEventListener('keypress', (event) => {
                     addOutput('Error: ' + err.message, true);
                     console.error(err);
                 } else {
-                    addOutput(response.getLength());
-                    console.log(response.getLength());
                     const leaderPort = parseInt(response.getLeaderport()) + 1;
                     if (!response.getSuccess() && leaderPort) {
                         const tmp = new proto.client.ClientServiceClient('http://localhost:' + leaderPort, null, null);
                         addOutput(`Redirect: leader at localhost:${leaderPort}`, true)
-                        tmp.get(request, {}, (err, response) => {
+                        tmp.strln(request, {}, (err, response) => {
                             if (err) {
                                 addOutput('Error: ' + err.message, true);
                                 console.error(err);
                             } else {
-                                addOutput(response.getValue() ?? "Key not found");
-                                console.log(response.getValue());
+                                addOutput(response.array[0] ?? "Key not found");
+                                console.log("HOHO:", response.getValue());
                             }
                         });
                     } else {
                         if (response.getSuccess()) {
-                            addOutput(response.getValue());
+                            addOutput(response.array[0]);
                         } else {
                             addOutput('Key not found', true);
                         }
@@ -157,24 +155,22 @@ document.getElementById('command').addEventListener('keypress', (event) => {
                     addOutput('Error: ' + err.message, true);
                     console.error(err);
                 } else {
-                    addOutput(response.getValue());
-                    console.log(response.getValue());
                     const leaderPort = parseInt(response.getLeaderport()) + 1;
                     if (!response.getSuccess() && leaderPort) {
                         const tmp = new proto.client.ClientServiceClient('http://localhost:' + leaderPort, null, null);
                         addOutput(`Redirect: leader at localhost:${leaderPort}`, true)
-                        tmp.get(request, {}, (err, response) => {
+                        tmp.del(request, {}, (err, response) => {
                             if (err) {
                                 addOutput('Error: ' + err.message, true);
                                 console.error(err);
                             } else {
-                                addOutput(response.getValue() ?? "Key not found");
+                                addOutput("Delete success" ?? "Key not found");
                                 console.log(response.getValue());
                             }
                         });
                     } else {
                         if (response.getSuccess()) {
-                            addOutput(response.getValue());
+                            addOutput('Delete success');
                         } else {
                             addOutput('Key not found', true);
                         }
@@ -191,18 +187,45 @@ document.getElementById('command').addEventListener('keypress', (event) => {
                     addOutput('Error: ' + err.message, true);
                     console.error(err);
                 } else {
-                    addOutput(response.getValue());
-                    console.log(response.getValue());
                     const leaderPort = parseInt(response.getLeaderport()) + 1;
                     if (!response.getSuccess() && leaderPort) {
                         const tmp = new proto.client.ClientServiceClient('http://localhost:' + leaderPort, null, null);
                         addOutput(`Redirect: leader at localhost:${leaderPort}`, true)
-                        tmp.get(request, {}, (err, response) => {
+                        tmp.append(request, {}, (err, response) => {
                             if (err) {
                                 addOutput('Error: ' + err.message, true);
                                 console.error(err);
                             } else {
-                                addOutput(response.getValue() ?? "Key not found");
+                                addOutput("Append success. Result: " + response.getValue()  ?? "Key not found");
+                                console.log(response.getValue());
+                            }
+                        });
+                    } else {
+                        if (response.getSuccess()) {
+                            addOutput("Append success. Result: " + response.getValue());
+                        } else {
+                            addOutput('Append failed', true);
+                        }
+                    }
+                }
+            });
+        } else if (tokens[0] == 'reqlog') {
+            const request = new ClientRequestLogRequest();
+            clientService.reqLog(request, {}, (err, response) => {
+                if (err) {
+                    addOutput('Error: ' + err.message, true);
+                    console.error(err);
+                } else {
+                    const leaderPort = parseInt(response.getLeaderport()) + 1;
+                    if (!response.getSuccess() && leaderPort) {
+                        const tmp = new proto.client.ClientServiceClient('http://localhost:' + leaderPort, null, null);
+                        addOutput(`Redirect: leader at localhost:${leaderPort}`, true)
+                        tmp.reqLog(request, {}, (err, response) => {
+                            if (err) {
+                                addOutput('Error: ' + err.message, true);
+                                console.error(err);
+                            } else {
+                                addOutput(response.getValue());
                                 console.log(response.getValue());
                             }
                         });
@@ -210,7 +233,7 @@ document.getElementById('command').addEventListener('keypress', (event) => {
                         if (response.getSuccess()) {
                             addOutput(response.getValue());
                         } else {
-                            addOutput('Append failed', true);
+                            addOutput('Request log failed', true);
                         }
                     }
                 }
