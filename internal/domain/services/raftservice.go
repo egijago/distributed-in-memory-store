@@ -580,6 +580,3 @@ func (k *RaftService) initializeVoting() {
 		k.state.Role = constants.NODE_ROLE_FOLLOWER
 	}
 }
-
-
-f
