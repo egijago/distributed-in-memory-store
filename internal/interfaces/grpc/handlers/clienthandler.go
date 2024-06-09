@@ -65,5 +65,5 @@ func (s *GrpcHandler) Append(ctx context.Context, req *pb.ClientAppendRequest) (
 
 func (s *GrpcHandler) ReqLog(ctx context.Context, req *pb.ClientRequestLogRequest) (*pb.ClientRequestLogResponse, error) {
 	response := s.clientService.ReqLog()
-	return &pb.ClientRequestLogResponse{Value: response.Value}, nil
+	return &pb.ClientRequestLogResponse{Value: response.Value, Success: response.Success, LeaderPort: response.LeaderPort}, nil
 }

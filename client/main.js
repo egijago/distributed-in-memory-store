@@ -223,8 +223,6 @@ document.getElementById('command').addEventListener('keypress', (event) => {
                     addOutput('Error: ' + err.message, true);
                     console.error(err);
                 } else {
-                    addOutput(response.getValue());
-                    console.log(response.getValue());
                     const leaderPort = parseInt(response.getLeaderport()) + 1;
                     if (!response.getSuccess() && leaderPort) {
                         const tmp = new proto.client.ClientServiceClient('http://localhost:' + leaderPort, null, null);
@@ -234,7 +232,7 @@ document.getElementById('command').addEventListener('keypress', (event) => {
                                 addOutput('Error: ' + err.message, true);
                                 console.error(err);
                             } else {
-                                addOutput(response.getValue() ?? "Key not found");
+                                addOutput(response.getValue());
                                 console.log(response.getValue());
                             }
                         });
