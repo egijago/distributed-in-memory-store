@@ -93,28 +93,28 @@ func NewRaftFollowerService(state entities.State, kvRepository repository.KeyVal
 	return service
 }
 
-func (k *RaftService) ForceCommit(request dtos.RaftForceCommitRequest) (response *dtos.RaftForceCommitResponse) {
-	log, success := k.logRepository.Get(request.Index)
-	if (!success) {
-		return &dtos.RaftForceCommitResponse{
-			Success: false,
-		}
-	}
+// func (k *RaftService) ForceCommit(request dtos.RaftForceCommitRequest) (response *dtos.RaftForceCommitResponse) {
+// 	log, success := k.logRepository.Get(request.Index)
+// 	if (!success) {
+// 		return &dtos.RaftForceCommitResponse{
+// 			Success: false,
+// 		}
+// 	}
 
-	command, arg1, arg2 := log.Parse()
-	if command == "mem" {
-		utils.LogInfo("[COMMIT] Add member ", arg1,":", arg2)
-		k.state.AddMember(entities.Address{Host: arg1, Port: arg2})
-	} else { 
-		utils.LogInfo("[COMMIT] Execute command ", command,arg1, arg2)
-		k.kvRepository.Execute(command, arg1, arg2)
-	}
-	if (!success) {
-		return &dtos.RaftForceCommitResponse{
-			Success: true,
-		}
-	}
-}
+// 	command, arg1, arg2 := log.Parse()
+// 	if command == "mem" {
+// 		utils.LogInfo("[COMMIT] Add member ", arg1,":", arg2)
+// 		k.state.AddMember(entities.Address{Host: arg1, Port: arg2})
+// 	} else { 
+// 		utils.LogInfo("[COMMIT] Execute command ", command,arg1, arg2)
+// 		k.kvRepository.Execute(command, arg1, arg2)
+// 	}
+// 	if (!success) {
+// 		return &dtos.RaftForceCommitResponse{
+// 			Success: true,
+// 		}
+// 	}
+// }
 
 func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (response *dtos.RaftAppendEntriesResponse) {
 	k.heartbeatRcvReset <- struct{}{}

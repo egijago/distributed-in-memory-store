@@ -259,11 +259,11 @@ func (k *ClientService) ReqLog() (response *dtos.ClientRequestLogResponse) {
 	}
 
 	/* Get All Key Value Pairs */
-	var keyValuePairs []string
-    for key, value := range k.kvRepository.GetBuffer() {
-        keyValuePairs = append(keyValuePairs, fmt.Sprintf("%s:%s", key, value))
+	var logs []string
+    for _, log := range k.logRepository.GetBuffer() {
+        logs = append(logs, fmt.Sprintf(log.Command))
     }
-    allValue := strings.Join(keyValuePairs, ", ")
+    allValue := strings.Join(logs, ", ")
 
 	return &dtos.ClientRequestLogResponse{
 		Value: allValue,

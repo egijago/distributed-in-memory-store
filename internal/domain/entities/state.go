@@ -68,14 +68,27 @@ func NewState(address Address, electionTimeout int, heartbeatInterval int) *Stat
 }
 
 func (k *State) AddMember(address Address) (success bool) {
+	// for _, member := range k.Members {
+	// 	// If member already exists, skip
+	// 	if member.Address == address {
+	// 		continue
+	// 	} else {
+	// 		newMember := NewRaftClient(*NewAddress(address.Host, address.Port))
+	// 		k.Members = append(k.Members, *newMember)
+	// 	}
+	// }
+	
+	found := false
 	for _, member := range k.Members {
-		// If member already exists, skip
-		if member.Address == address {
-			continue
-		} else {
-			newMember := NewRaftClient(*NewAddress(address.Host, address.Port))
-			k.Members = append(k.Members, *newMember)
+		if (member.Address.Port == address.Port) {
+			found = true
+			break
 		}
+	}
+	
+	if !found {
+		newMember := NewRaftClient(*NewAddress(address.Host, address.Port))
+		k.Members = append(k.Members, *newMember)
 	}
 
 	return true
