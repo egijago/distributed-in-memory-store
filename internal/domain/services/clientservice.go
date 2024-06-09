@@ -263,7 +263,7 @@ func (k *ClientService) ReqLog() (response *dtos.ClientRequestLogResponse) {
     for key, value := range k.kvRepository.GetBuffer() {
         keyValuePairs = append(keyValuePairs, fmt.Sprintf("%s:%s", key, value))
     }
-    allValue := strings.Join(keyValuePairs, ",")
+    allValue := strings.Join(keyValuePairs, ", ")
 
 	return &dtos.ClientRequestLogResponse{
 		Value: allValue,
