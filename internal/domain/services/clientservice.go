@@ -192,6 +192,10 @@ func (k *ClientService) Append(request dtos.ClientAppendRequest) (response *dtos
 		fmt.Printf("[ERROR] error on propagate log: %v", err)
 
 		k.logRepository.DeleteLogsFromIndex(logIndex)
+
+		for index, member := range k.raftService.state.Members {
+			k.raftService.state.Members[index].NextIndex = min(k.logRepository.GetLastIndex()+1, member.NextIndex)
+		}
 		return &dtos.ClientAppendResponse{
 			Success: false,
 		}

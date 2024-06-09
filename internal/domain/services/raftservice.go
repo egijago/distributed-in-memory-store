@@ -156,14 +156,12 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 			// Conflict detected: same index but different term
 			utils.LogInfo("New Log Term ", newLog.Term)
 			utils.LogInfo("Log ", log1.Index, "Term ", log1.Term)
-			if log1.Term != newLog.Term {
-				utils.LogInfo("Term Difference")
-				// Delete the existing entry and all that follow it
-				k.logRepository.DeleteLogsFromIndex(newLog.Index)
-				// Append the new log
-				k.logRepository.Append(newLog)
+			utils.LogInfo("Term Difference")
+			// Delete the existing entry and all that follow it
+			k.logRepository.DeleteLogsFromIndex(newLog.Index)
+			// Append the new log
+			k.logRepository.Append(newLog)
 
-			}
 		} else {
 			utils.LogInfo("No conflict")
 			// No conflict, append the new log
@@ -320,7 +318,6 @@ func (k *RaftService) startHeartbeatListener() {
 			utils.LogInfo("[HEARTBEAT] Stop listening to heartbeat")
 			return
 		case <-timer.C:
-			utils.LogInfo("MELVIN")
 			if (k.state.Role == constants.NODE_ROLE_FOLLOWER && k.state.LeaderId != constants.INVALID_ID) {
 				utils.LogInfo("[HEARTBEAT] Heartbeat timeout, start voting...")
 				go k.initializeVoting()
