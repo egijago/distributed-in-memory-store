@@ -187,24 +187,22 @@ document.getElementById('command').addEventListener('keypress', (event) => {
                     addOutput('Error: ' + err.message, true);
                     console.error(err);
                 } else {
-                    addOutput(response.getValue());
-                    console.log(response.getValue());
                     const leaderPort = parseInt(response.getLeaderport()) + 1;
                     if (!response.getSuccess() && leaderPort) {
                         const tmp = new proto.client.ClientServiceClient('http://localhost:' + leaderPort, null, null);
                         addOutput(`Redirect: leader at localhost:${leaderPort}`, true)
-                        tmp.get(request, {}, (err, response) => {
+                        tmp.append(request, {}, (err, response) => {
                             if (err) {
                                 addOutput('Error: ' + err.message, true);
                                 console.error(err);
                             } else {
-                                addOutput(response.getValue() ?? "Key not found");
+                                addOutput("Append success. Result: " + response.getValue()  ?? "Key not found");
                                 console.log(response.getValue());
                             }
                         });
                     } else {
                         if (response.getSuccess()) {
-                            addOutput(response.getValue());
+                            addOutput("Append success. Result: " + response.getValue());
                         } else {
                             addOutput('Append failed', true);
                         }

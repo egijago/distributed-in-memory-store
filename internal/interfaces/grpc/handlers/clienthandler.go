@@ -60,7 +60,7 @@ func (s *GrpcHandler) Append(ctx context.Context, req *pb.ClientAppendRequest) (
 	}
 
 	response := s.clientService.Append(request)
-	return &pb.ClientAppendResponse{Value: response.Value}, nil
+	return &pb.ClientAppendResponse{Value: response.Value, Success: response.Success, LeaderPort: response.LeaderPort}, nil
 }
 
 func (s *GrpcHandler) ReqLog(ctx context.Context, req *pb.ClientRequestLogRequest) (*pb.ClientRequestLogResponse, error) {
