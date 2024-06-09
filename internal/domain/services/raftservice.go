@@ -69,7 +69,7 @@ func NewRaftFollowerService(state entities.State, kvRepository repository.KeyVal
 	}
 	utils.LogInfo("[CREATE RAFT] membership granted from ", masterAddress.String())
 
-	utils.Print("Current members: ")
+	utils.Print("[MEMBERSHIP] Current members: ")
 	members := []entities.RaftClient{}
 	for _, member := range response.Members {
 		client := entities.NewRaftClient(*entities.NewAddress(member.Host, member.Port))
@@ -131,7 +131,7 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 			utils.LogInfo("New Log Term ", newLog.Term)
 			utils.LogInfo("Log ", log1.Index, "Term ", log1.Term)
 			if log1.Term != newLog.Term {
-				utils.LogInfo("INDEX EXISTS TERM DIFF")
+				utils.LogInfo("Term Difference")
 				// Delete the existing entry and all that follow it
 				k.logRepository.DeleteLogsFromIndex(newLog.Index)
 				// Append the new log
@@ -269,8 +269,8 @@ func (k *RaftService) startHeartbeatEmitter() {
 		default:
 			utils.LogInfo("[HEARTBEAT] Sending heartbeat...")
 			/* Display members for testing purpose */
-			utils.LogInfo("MEMBERS:")
-			utils.LogInfo(k.state.Members)
+			// utils.LogInfo("MEMBERS:")
+			// utils.LogInfo(k.state.Members)
 
 			lastLog, _ := k.logRepository.GetLastLog()
 
@@ -332,17 +332,17 @@ func (k *RaftService) PropagateLog() error {
 		var entries []entities.Log
 		var i int
 
-		utils.LogInfo("NEXT IDX BEFORE LOOP: ", member.NextIndex)
+		// utils.LogInfo("NEXT IDX BEFORE LOOP: ", member.NextIndex)
 		for i = member.NextIndex; i <= k.logRepository.GetLastIndex(); i++ {
 			if i == -1 {
 				continue
 			}
 			utils.LogInfo("FILLING ENTRIES")
-			utils.LogInfo("Log ", i, " term: ", logMap[i].Term)
+			utils.LogInfo("Log: ", i, "; term: ", logMap[i].Term)
 			entries = append(entries, logMap[i])
 		}
 
-		fmt.Printf("[Propagate Log] entries content: %+v", entries)
+		// fmt.Printf("[Propagate Log] entries content: %+v", entries)
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
@@ -425,12 +425,12 @@ func (k *RaftService) sendEntriesToAllMembers() {
 		var entries []entities.Log
 		var i int
 
-		utils.LogInfo("NEXT IDX BEFORE LOOP: ", member.NextIndex)
+		// utils.LogInfo("NEXT IDX BEFORE LOOP: ", member.NextIndex)
 		for i = member.NextIndex; i <= k.logRepository.GetLastIndex(); i++ {
 			if i == -1 {
 				continue
 			}
-			utils.LogInfo("FILLING ENTRIES")
+			utils.LogInfo("Fill entries")
 			utils.LogInfo("Log ", i, " term: ", logMap[i].Term)
 			entries = append(entries, logMap[i])
 		}
@@ -457,15 +457,15 @@ func (k *RaftService) sendEntriesToAllMembers() {
 				countAgree++
 				mutex.Unlock()
 				k.state.Members[id].NextIndex = k.logRepository.GetLastIndex() + 1
-				utils.LogInfo("UPDATED NEXT INDEX TO ", k.state.Members[id].NextIndex)
+				utils.LogInfo("Update NextIndex: ", k.state.Members[id].NextIndex)
 			} else {
-				utils.LogInfo("DECREMENT NEXT INDEX")
+				utils.LogInfo("Decrement NextIndex")
 				k.state.Members[id].NextIndex--
 			}
 		}(id)
 	}
 	wg.Wait()
-	utils.Println("countAgree: ", countAgree)
+	utils.Println("Agreement: ", countAgree)
 	if countAgree > len(k.state.Members)/2 {
 		utils.LogInfo("Success commit")
 		k.state.CommitIndex = k.logRepository.GetLastIndex()
@@ -477,8 +477,8 @@ func (k *RaftService) initializeVoting() {
 	utils.Println("[ELECTION] Initialize voting")
 	utils.Println("Heartbeat timeout: ", k.state.HeartbeatTimeout)
 	/* Display members for testing purpose */
-	utils.LogInfo("MEMBERS:")
-	utils.LogInfo(k.state.Members)
+	// utils.LogInfo("MEMBERS:")
+	// utils.LogInfo(k.state.Members)
 
 	k.state.CurrentTerm++
 	k.state.VotedFor = k.state.Id
@@ -489,8 +489,8 @@ func (k *RaftService) initializeVoting() {
 	var mutex sync.Mutex
 
 	/* Display members for testing purpose */
-	utils.LogInfo("MEMBERS:")
-	utils.LogInfo(k.state.Members)
+	// utils.LogInfo("MEMBERS:")
+	// utils.LogInfo(k.state.Members)
 
 	for id, member := range k.state.Members {
 		if id == k.state.Id {
