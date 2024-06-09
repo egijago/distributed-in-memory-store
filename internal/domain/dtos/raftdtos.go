@@ -13,6 +13,14 @@ type RaftAppendEntriesRequest struct {
 	LeaderCommit int
 }
 
+type RaftForceCommitRequest struct {
+	Index int
+}
+
+type RaftForceCommitResponse struct {
+	Success bool
+}
+
 type RaftAppendEntriesResponse struct {
 	Term    int
 	Success bool

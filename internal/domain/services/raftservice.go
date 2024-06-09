@@ -16,6 +16,7 @@ import (
 
 type RaftService struct {
 	state entities.State
+	memberLock sync.Mutex
 
 	caller clients.RaftClientCaller
 
@@ -55,7 +56,7 @@ func NewRaftLeaderService(state entities.State, kvRepository repository.KeyValue
 	service.logRepository.Append(log)
 
 	
-
+	go service.startHeartbeatListener()
 	go service.startHeartbeatEmitter()
 	return service
 }
@@ -90,6 +91,29 @@ func NewRaftFollowerService(state entities.State, kvRepository repository.KeyVal
 
 	go service.startHeartbeatListener()
 	return service
+}
+
+func (k *RaftService) ForceCommit(request dtos.RaftForceCommitRequest) (response *dtos.RaftForceCommitResponse) {
+	log, success := k.logRepository.Get(request.Index)
+	if (!success) {
+		return &dtos.RaftForceCommitResponse{
+			Success: false,
+		}
+	}
+
+	command, arg1, arg2 := log.Parse()
+	if command == "mem" {
+		utils.LogInfo("[COMMIT] Add member ", arg1,":", arg2)
+		k.state.AddMember(entities.Address{Host: arg1, Port: arg2})
+	} else { 
+		utils.LogInfo("[COMMIT] Execute command ", command,arg1, arg2)
+		k.kvRepository.Execute(command, arg1, arg2)
+	}
+	if (!success) {
+		return &dtos.RaftForceCommitResponse{
+			Success: true,
+		}
+	}
 }
 
 func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (response *dtos.RaftAppendEntriesResponse) {
@@ -208,7 +232,8 @@ func (k *RaftService) RequestVote(request dtos.RaftRequestVoteRequest) (response
 	// k.heartbeatRcvStop <- struct{}{}
 	k.heartbeatRcvReset <- struct{}{}
 
-	utils.LogInfo("[VOTE] getting vote request from candidate ", request.CandidateId, "(", k.state.Members[request.CandidateId].Address.String(), ")")
+	utils.LogInfo("[VOTE] getting vote request from candidate ", request.CandidateId)
+	// utils.LogInfo("[VOTE] getting vote request from candidate ", request.CandidateId, "(", k.state.Members[request.CandidateId].Address.String(), ")")
 	lastLog, _ := k.logRepository.GetLastLog()
 
 	/* Reply false if term < CurrentTerm */
@@ -310,8 +335,11 @@ func (k *RaftService) startHeartbeatListener() {
 			utils.LogInfo("[HEARTBEAT] Stop listening to heartbeat")
 			return
 		case <-timer.C:
-			utils.LogInfo("[HEARTBEAT] Heartbeat timeout, start voting...")
-			go k.initializeVoting()
+			utils.LogInfo("MELVIN")
+			if (k.state.Role == constants.NODE_ROLE_FOLLOWER && k.state.LeaderId != constants.INVALID_ID) {
+				utils.LogInfo("[HEARTBEAT] Heartbeat timeout, start voting...")
+				go k.initializeVoting()
+			}
 			timer.Reset(k.state.HeartbeatTimeout)
 		case <-k.heartbeatRcvReset:
 			if !timer.Stop() {
@@ -477,8 +505,14 @@ func (k *RaftService) sendEntriesToAllMembers() {
 				k.state.Members[id].NextIndex = k.logRepository.GetLastIndex() + 1
 				utils.LogInfo("UPDATED NEXT INDEX TO ", k.state.Members[id].NextIndex)
 			} else {
-				utils.LogInfo("DECREMENT NEXT INDEX")
-				k.state.Members[id].NextIndex--
+				if (resp.Term > k.state.CurrentTerm ) {
+					k.state.Role = constants.NODE_ROLE_FOLLOWER
+					k.heartbeatSendStop <- struct{}{}
+					go k.startHeartbeatListener()
+				} else {
+					utils.LogInfo("DECREMENT NEXT INDEX")
+					k.state.Members[id].NextIndex--
+				}
 			}
 		}(id)
 	}
@@ -571,3 +605,6 @@ func (k *RaftService) initializeVoting() {
 	// if k.state.Role == constants.NODE_ROLE_CANDIDATE {
 	// 	k.state.Role
 }
+
+
+f
