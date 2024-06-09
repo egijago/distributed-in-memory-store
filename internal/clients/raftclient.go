@@ -12,8 +12,7 @@ type RaftClientCallerImpl struct {
 }
 
 func NewRaftClientCaller(context context.Context) *RaftClientCallerImpl {
-	return &RaftClientCallerImpl{
-	}
+	return &RaftClientCallerImpl{}
 }
 
 type RaftClientCaller interface {
@@ -51,7 +50,7 @@ func (l *RaftClientCallerImpl) AppendEntries(ctx context.Context, client entitie
 	}, nil
 }
 
-func (l *RaftClientCallerImpl) RequestVote(ctx context.Context,client entities.RaftClient, request dtos.RaftRequestVoteRequest) (*dtos.RaftRequestVoteResponse, error) {
+func (l *RaftClientCallerImpl) RequestVote(ctx context.Context, client entities.RaftClient, request dtos.RaftRequestVoteRequest) (*dtos.RaftRequestVoteResponse, error) {
 
 	response, err := client.ProtoClient.RequestVote(ctx, &pb.RaftRequestVoteRequest{
 		Term:         int32(request.Term),
@@ -92,27 +91,3 @@ func (l *RaftClientCallerImpl) ApplyMembership(ctx context.Context, client entit
 		Term:    int(response.Term),
 	}, nil
 }
-
-// func (r *raftClientCaller) GetAddress() entities.Address {
-// 	return r.raftClient.Address
-// }
-
-// func (r *raftClientCaller) SetAddress(address entities.Address) {
-// 	r.raftClient.Address = address
-// }
-
-// func (r *raftClientCaller) GetNextIndex() int {
-// 	return r.raftClient.NextIndex
-// }
-
-// func (r *raftClientCaller) SetNextIndex(nextIndex int) {
-// 	r.raftClient.NextIndex = nextIndex
-// }
-
-// func (r *raftClientCaller) GetMatchIndex() int {
-// 	return r.raftClient.MatchIndex
-// }
-
-// func (r *raftClientCaller) SetMatchIndex(matchIndex int) {
-// 	r.raftClient.MatchIndex = matchIndex
-// }
