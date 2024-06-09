@@ -6,6 +6,7 @@ type KeyValueRepositoryInterface interface {
 	Delete(string)
 	Append(string, string)
 	Execute(string, string, string)
+	GetBuffer() (map[string]string)
 }
 
 type KeyValueRepository struct {
@@ -52,3 +53,8 @@ func (l *KeyValueRepository) Execute(command, arg1, arg2 string) {
 		l.Append(arg1, arg2)
 	}
 }
+
+func (l *KeyValueRepository) GetBuffer() map[string]string {
+	return l.buffer
+}
+

@@ -5,7 +5,8 @@ const client = proto.client
 const { ClientServiceClient } = client;
 const {
     ClientPingRequest, ClientGetRequest, ClientSetRequest,
-    ClientStrlnRequest, ClientDelRequest, ClientAppendRequest
+    ClientStrlnRequest, ClientDelRequest, ClientAppendRequest,
+    ClientRequestLogRequest
 } = client;
 
 var PORT = document.getElementById('port').value;
@@ -211,6 +212,37 @@ document.getElementById('command').addEventListener('keypress', (event) => {
                             addOutput(response.getValue());
                         } else {
                             addOutput('Append failed', true);
+                        }
+                    }
+                }
+            });
+        } else if (tokens[0] == 'reqlog') {
+            const request = new ClientRequestLogRequest();
+            clientService.reqLog(request, {}, (err, response) => {
+                if (err) {
+                    addOutput('Error: ' + err.message, true);
+                    console.error(err);
+                } else {
+                    addOutput(response.getValue());
+                    console.log(response.getValue());
+                    const leaderPort = parseInt(response.getLeaderport()) + 1;
+                    if (!response.getSuccess() && leaderPort) {
+                        const tmp = new proto.client.ClientServiceClient('http://localhost:' + leaderPort, null, null);
+                        addOutput(`Redirect: leader at localhost:${leaderPort}`, true)
+                        tmp.get(request, {}, (err, response) => {
+                            if (err) {
+                                addOutput('Error: ' + err.message, true);
+                                console.error(err);
+                            } else {
+                                addOutput(response.getValue() ?? "Key not found");
+                                console.log(response.getValue());
+                            }
+                        });
+                    } else {
+                        if (response.getSuccess()) {
+                            addOutput(response.getValue());
+                        } else {
+                            addOutput('Request log failed', true);
                         }
                     }
                 }

@@ -8,6 +8,7 @@ import (
 	// "if3230-tubes-williamjeffersonclinton/internal/utils"
 
 	"fmt"
+	"strings"
 )
 
 type ClientService struct {
@@ -236,5 +237,36 @@ func (k *ClientService) Strln(request dtos.ClientStrlnRequest) (response *dtos.C
 	return &dtos.ClientStrlnResponse{
 		Length:  length,
 		Success: false,
+	}
+}
+
+func (k *ClientService) ReqLog() (response *dtos.ClientRequestLogResponse) {
+	// If election is happening
+	if (k.raftService.state.IsElecting) {
+		return &dtos.ClientRequestLogResponse{
+			Success: false,
+		}
+	}
+
+	// Redirect to leader if node type is follower
+	if (k.raftService.state.Role != constants.NODE_ROLE_LEADER){
+		fmt.Println("[ERROR] Request accepted by a follower")
+		return &dtos.ClientRequestLogResponse{
+			Value: "",
+			Success: false,
+			LeaderPort: k.raftService.state.Members[k.raftService.state.LeaderId].Address.Port,
+		}
+	}
+
+	/* Get All Key Value Pairs */
+	var keyValuePairs []string
+    for key, value := range k.kvRepository.GetBuffer() {
+        keyValuePairs = append(keyValuePairs, fmt.Sprintf("%s:%s", key, value))
+    }
+    allValue := strings.Join(keyValuePairs, ",")
+
+	return &dtos.ClientRequestLogResponse{
+		Value: allValue,
+		Success: true,
 	}
 }

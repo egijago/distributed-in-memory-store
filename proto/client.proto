@@ -4,7 +4,6 @@ option go_package = "proto.pb";
 
 package client;
 
-
 service ClientService {
     rpc Ping(ClientPingRequest) returns (ClientPingResponse);
     rpc Get(ClientGetRequest) returns (ClientGetResponse);
@@ -12,6 +11,7 @@ service ClientService {
     rpc Strln(ClientStrlnRequest) returns (ClientStrlnResponse);
     rpc Del (ClientDelRequest) returns (ClientDelResponse);
     rpc Append (ClientAppendRequest) returns (ClientAppendResponse);
+    rpc ReqLog (ClientRequestLogRequest) returns (ClientRequestLogResponse);
 }
 
 message ClientPingRequest {
@@ -68,6 +68,14 @@ message ClientAppendRequest {
 }
 
 message ClientAppendResponse {
+    string value = 1;
+    bool success = 2;
+    string leaderPort = 3;
+}
+
+message ClientRequestLogRequest {}
+
+message ClientRequestLogResponse {
     string value = 1;
     bool success = 2;
     string leaderPort = 3;

@@ -25,6 +25,7 @@ const (
 	ClientService_Strln_FullMethodName  = "/client.ClientService/Strln"
 	ClientService_Del_FullMethodName    = "/client.ClientService/Del"
 	ClientService_Append_FullMethodName = "/client.ClientService/Append"
+	ClientService_ReqLog_FullMethodName = "/client.ClientService/ReqLog"
 )
 
 // ClientServiceClient is the client API for ClientService service.
@@ -37,6 +38,7 @@ type ClientServiceClient interface {
 	Strln(ctx context.Context, in *ClientStrlnRequest, opts ...grpc.CallOption) (*ClientStrlnResponse, error)
 	Del(ctx context.Context, in *ClientDelRequest, opts ...grpc.CallOption) (*ClientDelResponse, error)
 	Append(ctx context.Context, in *ClientAppendRequest, opts ...grpc.CallOption) (*ClientAppendResponse, error)
+	ReqLog(ctx context.Context, in *ClientRequestLogRequest, opts ...grpc.CallOption) (*ClientRequestLogResponse, error)
 }
 
 type clientServiceClient struct {
@@ -101,6 +103,15 @@ func (c *clientServiceClient) Append(ctx context.Context, in *ClientAppendReques
 	return out, nil
 }
 
+func (c *clientServiceClient) ReqLog(ctx context.Context, in *ClientRequestLogRequest, opts ...grpc.CallOption) (*ClientRequestLogResponse, error) {
+	out := new(ClientRequestLogResponse)
+	err := c.cc.Invoke(ctx, ClientService_ReqLog_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ClientServiceServer is the server API for ClientService service.
 // All implementations must embed UnimplementedClientServiceServer
 // for forward compatibility
@@ -111,6 +122,7 @@ type ClientServiceServer interface {
 	Strln(context.Context, *ClientStrlnRequest) (*ClientStrlnResponse, error)
 	Del(context.Context, *ClientDelRequest) (*ClientDelResponse, error)
 	Append(context.Context, *ClientAppendRequest) (*ClientAppendResponse, error)
+	ReqLog(context.Context, *ClientRequestLogRequest) (*ClientRequestLogResponse, error)
 	mustEmbedUnimplementedClientServiceServer()
 }
 
@@ -135,6 +147,9 @@ func (UnimplementedClientServiceServer) Del(context.Context, *ClientDelRequest) 
 }
 func (UnimplementedClientServiceServer) Append(context.Context, *ClientAppendRequest) (*ClientAppendResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Append not implemented")
+}
+func (UnimplementedClientServiceServer) ReqLog(context.Context, *ClientRequestLogRequest) (*ClientRequestLogResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReqLog not implemented")
 }
 func (UnimplementedClientServiceServer) mustEmbedUnimplementedClientServiceServer() {}
 
@@ -257,6 +272,24 @@ func _ClientService_Append_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClientService_ReqLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClientRequestLogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientServiceServer).ReqLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientService_ReqLog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientServiceServer).ReqLog(ctx, req.(*ClientRequestLogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ClientService_ServiceDesc is the grpc.ServiceDesc for ClientService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -287,6 +320,10 @@ var ClientService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Append",
 			Handler:    _ClientService_Append_Handler,
+		},
+		{
+			MethodName: "ReqLog",
+			Handler:    _ClientService_ReqLog_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
