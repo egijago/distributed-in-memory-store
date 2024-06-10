@@ -55,3 +55,28 @@ func (s *GrpcHandler) ApplyMembership(ctx context.Context, req *pb.RaftApplyMemb
 	}
 	return &pb.RaftApplyMembershipResponse{Id: int32(response.Id), Members: pbMembers, Success: response.Success, Term: int32(response.Term)}, nil
 }
+
+func (s *GrpcHandler) PrepareAddMember(ctx context.Context, req *pb.RaftPrepareAddMemberRequest) (*pb.RaftPrepareAddMemberResponse, error) {
+	request := dtos.RaftPrepareAddMemberRequest{
+		Term:     int(req.GetTerm()),
+		LeaderId: int(req.GetLeaderId()),
+	}
+	response := s.raftService.PrepareAddMember(request)
+	return &pb.RaftPrepareAddMemberResponse{Term: int32(response.Term), Success: response.Success}, nil
+}
+
+func (s *GrpcHandler) CommitAddMember(ctx context.Context, req *pb.RaftCommitAddMemberRequest) (*pb.RaftCommitAddMemberResponse, error) {
+	request := dtos.RaftCommitAddMemberRequest{
+		Term:     int(req.GetTerm()),
+		LeaderId: int(req.GetLeaderId()),
+		Commit:   req.GetCommit(),
+		Address:  *entity.NewAddress(req.Address.Host, req.Address.Port),
+	}
+	response := s.raftService.CommitAddMember(request)
+	return &pb.RaftCommitAddMemberResponse{Term: int32(response.Term), Success: response.Success}, nil
+}
+
+func (s *GrpcHandler) State(ctx context.Context, req *pb.RaftStateRequest) (*pb.RaftStateResponse, error) {
+	response := s.raftService.State(dtos.RaftStateRequest{})
+	return &pb.RaftStateResponse{State: response.State}, nil
+}

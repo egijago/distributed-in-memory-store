@@ -8,6 +8,9 @@ service RaftService {
     rpc AppendEntries(RaftAppendEntriesRequest) returns (RaftAppendEntriesResponse);
     rpc RequestVote(RaftRequestVoteRequest) returns (RaftRequestVoteResponse);
     rpc ApplyMembership(RaftApplyMembershipRequest) returns (RaftApplyMembershipResponse);
+    rpc PrepareAddMember(RaftPrepareAddMemberRequest) returns (RaftPrepareAddMemberResponse);
+    rpc CommitAddMember(RaftCommitAddMemberRequest) returns (RaftCommitAddMemberResponse);
+    rpc State(RaftStateRequest) returns (RaftStateResponse);
 }
 
 message RaftAppendEntriesRequest {
@@ -59,3 +62,31 @@ message Address {
     string port = 2;
 }
 
+message RaftPrepareAddMemberRequest {
+    int32 term = 1;
+    int32 leaderId = 2;
+}
+
+message RaftPrepareAddMemberResponse {
+    int32 term = 1;
+    bool success = 2;
+}
+
+message RaftCommitAddMemberRequest {
+    int32 term = 1;
+    int32 leaderId = 2;
+    bool commit = 3;
+    Address address = 4;
+}
+
+message RaftCommitAddMemberResponse {
+    int32 term = 1;
+    bool success = 2;
+}
+
+message RaftStateRequest {
+}
+
+message RaftStateResponse {
+    repeated string state = 1;
+}

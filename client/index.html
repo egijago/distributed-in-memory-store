@@ -14,6 +14,7 @@
           margin-top: 10px;
           width: 50vw; 
           height: 50vh;
+          margin-bottom: 200px;
         } 
 
         #output {
@@ -24,6 +25,7 @@
           height: 100%; 
           overflow-y: auto;
         }
+      
 
         #command {
           border: none;
@@ -31,19 +33,28 @@
           width: 100%; 
           height: 20px;
         }
+
+      .element {
+        display: inline-block;
+        margin-right: 10px;
+      }
         </style>
 </head>
 <body>
     <h1>Distributed Key-Value Store</h1>
-    <label for="port">localhost:  </label><input type="text" id="port" name="port" value="8001">
+    <label for="port">localhost:  </label><input type="text" id="port" name="port" value="7000">
     <div id="cli">
       <div id="output"></div>
       <input type="text"  id="command" name="command">
+    </div>
+    <div id="status">
     </div>
 
     <script>var exports = {} </script>
     <script type="module" src="./generated/proto/client_pb.js "></script> 
     <script type="module" src="./generated/proto/client_grpc_web_pb.js"></script> 
+    <script type="module" src="./generated/proto/raft_pb.js "></script> 
+    <script type="module" src="./generated/proto/raft_grpc_web_pb.js"></script> 
     <script type="module" src="main.js"></script> 
 </body>
 </html>

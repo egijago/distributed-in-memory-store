@@ -1,78 +1,77 @@
 package services
 
 import (
+	"fmt"
+	"strings"
+
+	"if3230-tubes-williamjeffersonclinton/internal/domain/constants"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/dtos"
 	entity "if3230-tubes-williamjeffersonclinton/internal/domain/entities"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/repositories"
-	"if3230-tubes-williamjeffersonclinton/internal/domain/constants"
+	"if3230-tubes-williamjeffersonclinton/internal/utils"
 	// "if3230-tubes-williamjeffersonclinton/internal/utils"
-
-	"fmt"
-	"strings"
 )
 
 type ClientService struct {
-	lastApplied   int
-	currentTerm   int
+	raftService   RaftServiceInterface
+	state         entity.StateInterface
 	kvRepository  repositories.KeyValueRepositoryInterface
 	logRepository repositories.LogRepositoryInterface
-	raftService   *RaftService	
 }
 
-func NewClientService(kvRepository repositories.KeyValueRepositoryInterface, logRepository repositories.LogRepositoryInterface, raftService *RaftService) *ClientService {
+func NewClientService(state entity.StateInterface, kvRepository repositories.KeyValueRepositoryInterface, logRepository repositories.LogRepositoryInterface, raftService RaftServiceInterface) *ClientService {
 	return &ClientService{
+		state:         state,
 		kvRepository:  kvRepository,
 		logRepository: logRepository,
-		raftService: raftService,
+		raftService:   raftService,
 	}
 }
 
 func (k *ClientService) Set(request dtos.ClientSetRequest) (response *dtos.ClientSetResponse) {
-	// If election is happening
-	if (k.raftService.state.IsElecting) {
+	if k.state.IsVoting() { /* if election is happening, reject request */
+		utils.LogInfo("[SET] Voting is happening")
 		return &dtos.ClientSetResponse{
 			Success: false,
 		}
 	}
 
-	// Redirect to leader if node type is follower
-	if (k.raftService.state.Role != constants.NODE_ROLE_LEADER){
-		fmt.Println("[ERROR] Request accepted by a follower")
+	if k.state.GetRole() != constants.NODE_ROLE_LEADER { /* if not a leader, redirect request */
+		utils.LogInfo("[SET] Not a leader")
 		return &dtos.ClientSetResponse{
-			Success: false,
-			LeaderPort: k.raftService.state.Members[k.raftService.state.LeaderId].Address.Port,
+			Success:    false,
+			LeaderPort: k.state.GetMembers()[k.state.GetLeaderId()].Address.Port,
 		}
 	}
 
-
-	newLog := entity.Log{
-		Index:   k.logRepository.GetLastIndex() + 1,
+	index := k.logRepository.GetNewIndex()
+	k.logRepository.Set(index, entity.Log{
 		Command: "set " + request.Key + " " + request.Value,
-		Term:    k.currentTerm,
-	}
+		Index:   index,
+		Term:    k.state.GetCurrentTerm(),
+	})
 
-	k.logRepository.Append(newLog)
-	logIndex := k.logRepository.GetLastIndex()
-	
-	// Propagate leader logs
-	if err := k.raftService.PropagateLog(); err != nil {
-		fmt.Printf("[ERROR] error on propagate log: %v", err)
+	countAgree := k.raftService.AppendEntriesToAllMembers()
 
-		k.logRepository.DeleteLogsFromIndex(logIndex)
+	if countAgree < k.raftService.GetQuorum() { /* if not meet the quorum, reject request */
+		k.logRepository.Set(index, entity.Log{
+			Command: constants.INVALID_COMMAND,
+			Index:   index,
+			Term:    k.state.GetCurrentTerm(),
+		})
+		membersPtr := k.state.GetMembersPtr()
+		for id := range *membersPtr { /* correcting the prev (probably) sent entry*/
+			member := &(*membersPtr)[id]
+			member.NextIndex = min(member.NextIndex, index)
+		}
+
 		return &dtos.ClientSetResponse{
 			Success: false,
 		}
 	}
 
-	// if less than majority
-	if false {
-		fmt.Println("[ERROR] error set call")
-
-		k.logRepository.DeleteLogsFromIndex(logIndex)
-		return &dtos.ClientSetResponse{
-			Success: false,
-		}
-	}
+	k.kvRepository.Set(request.Key, request.Value)
+	k.state.SetCommitIndex(max(k.state.GetCommitIndex(), index))
 
 	return &dtos.ClientSetResponse{
 		Success: true,
@@ -80,197 +79,204 @@ func (k *ClientService) Set(request dtos.ClientSetRequest) (response *dtos.Clien
 }
 
 func (k *ClientService) Get(request dtos.ClientGetRequest) (response *dtos.ClientGetResponse) {
-	// If election is happening
-	if (k.raftService.state.IsElecting) {
+	if k.state.IsVoting() { /* if election is happening, reject request */
+		utils.LogInfo("[APPEND] Voting is happening")
 		return &dtos.ClientGetResponse{
 			Success: false,
 		}
 	}
 
-	// Redirect to leader if node type is follower
-	if (k.raftService.state.Role != constants.NODE_ROLE_LEADER){
-		fmt.Println("[ERROR] Request accepted by a follower")
+	if k.state.GetRole() != constants.NODE_ROLE_LEADER { /* if not a leader, redirect request */
+		utils.LogInfo("[APPEND] Not a leader")
 		return &dtos.ClientGetResponse{
-			Success: false,
-			Value:   "",
-			LeaderPort: k.raftService.state.Members[k.raftService.state.LeaderId].Address.Port,
-		}
-	}
-
-	Value, found := k.kvRepository.Get(request.Key)
-
-	if !found {
-		return &dtos.ClientGetResponse{
-			Value:   "",
-			Success: false,
-		}
-	}
-	return &dtos.ClientGetResponse{
-		Value:   Value,
-		Success: true,
-	}
-}
-
-func (k *ClientService) Delete(request dtos.ClientDeleteRequest) (response *dtos.ClientDeleteResponse) {
-	// If election is happening
-	if (k.raftService.state.IsElecting) {
-		return &dtos.ClientDeleteResponse{
-			Success: false,
-		}
-	}
-
-	// Redirect to leader if node type is follower
-	if (k.raftService.state.Role != constants.NODE_ROLE_LEADER){
-		fmt.Println("[ERROR] Request accepted by a follower")
-		return &dtos.ClientDeleteResponse{
-			Success: false,
-			LeaderPort: k.raftService.state.Members[k.raftService.state.LeaderId].Address.Port,
+			Success:    false,
+			LeaderPort: k.state.GetMembers()[k.state.GetLeaderId()].Address.Port,
 		}
 	}
 
 	value, found := k.kvRepository.Get(request.Key)
 
 	if !found {
-		return &dtos.ClientDeleteResponse{
-			Success: false,
-		}
-	}
-
-	newLog := entity.Log{
-		Index:   k.logRepository.GetLastIndex() + 1,
-		Command: "delete " + request.Key,
-		Term:    k.currentTerm,
-	}
-
-	k.logRepository.Append(newLog)
-	logIndex := k.logRepository.GetLastIndex()
-	
-	// Propagate leader logs
-	if err := k.raftService.PropagateLog(); err != nil {
-		fmt.Printf("[ERROR] error on propagate log: %v", err)
-
-		k.logRepository.DeleteLogsFromIndex(logIndex)
-		return &dtos.ClientDeleteResponse{
-			Success: false,
-		}
-	}
-
-	return &dtos.ClientDeleteResponse{
-		Value:   value,
-		Success: found,
-	}
-}
-
-func (k *ClientService) Append(request dtos.ClientAppendRequest) (response *dtos.ClientAppendResponse) {
-	// If election is happening
-	if (k.raftService.state.IsElecting) {
-		return &dtos.ClientAppendResponse{
-			Success: false,
-		}
-	}
-
-	// Redirect to leader if node type is follower
-	if (k.raftService.state.Role != constants.NODE_ROLE_LEADER){
-		fmt.Println("[ERROR] Request accepted by a follower")
-		return &dtos.ClientAppendResponse{
-			Success: false,
-			LeaderPort: k.raftService.state.Members[k.raftService.state.LeaderId].Address.Port,
-		}
-	}
-
-	newLog := entity.Log{
-		Index:   k.logRepository.GetLastIndex() + 1,
-		Command: "append " + request.Key + " " + request.Value,
-		Term:    k.currentTerm,
-	}
-
-	k.logRepository.Append(newLog)
-	logIndex := k.logRepository.GetLastIndex()
-	
-	// Propagate leader logs
-	if err := k.raftService.PropagateLog(); err != nil {
-		fmt.Printf("[ERROR] error on propagate log: %v", err)
-
-		k.logRepository.DeleteLogsFromIndex(logIndex)
-
-		for index, member := range k.raftService.state.Members {
-			k.raftService.state.Members[index].NextIndex = min(k.logRepository.GetLastIndex()+1, member.NextIndex)
-		}
-		return &dtos.ClientAppendResponse{
-			Success: false,
-		}
-	}
-
-	data, _ := k.kvRepository.Get(request.Key)
-
-	return &dtos.ClientAppendResponse{
-		Value:  data,
-		Success: true,
-	}
-}
-
-func (k *ClientService) Strln(request dtos.ClientStrlnRequest) (response *dtos.ClientStrlnResponse) {
-	// If election is happening
-	if (k.raftService.state.IsElecting) {
-		return &dtos.ClientStrlnResponse{
-			Success: false,
-		}
-	}
-
-	// Redirect to leader if node type is follower
-	if (k.raftService.state.Role != constants.NODE_ROLE_LEADER){
-		fmt.Println("[ERROR] Request accepted by a follower")
-		return &dtos.ClientStrlnResponse{
-			Length: 0,
-			Success: false,
-			LeaderPort: k.raftService.state.Members[k.raftService.state.LeaderId].Address.Port,
-		}
-	}
-
-	Value, found := k.kvRepository.Get(request.Key)
-
-	length := 0
-	if found {
-		length = len(Value)
-		return &dtos.ClientStrlnResponse{
-			Length:  length,
+		return &dtos.ClientGetResponse{
+			Value:   "NOT FOUND",
 			Success: true,
 		}
 	}
 
-	return &dtos.ClientStrlnResponse{
-		Length:  length,
-		Success: false,
+	return &dtos.ClientGetResponse{
+		Value:   value,
+		Success: true,
 	}
 }
 
+func (k *ClientService) Delete(request dtos.ClientDeleteRequest) (response *dtos.ClientDeleteResponse) {
+	if k.state.IsVoting() { /* if election is happening, reject request */
+		utils.LogInfo("[DELETE] Voting is happening")
+		return &dtos.ClientDeleteResponse{
+			Success: false,
+		}
+	}
+
+	if k.state.GetRole() != constants.NODE_ROLE_LEADER { /* if not a leader, redirect request */
+		utils.LogInfo("[DELETE] Not a leader")
+		return &dtos.ClientDeleteResponse{
+			Success:    false,
+			LeaderPort: k.state.GetMembers()[k.state.GetLeaderId()].Address.Port,
+		}
+	}
+
+	index := k.logRepository.GetNewIndex()
+	k.logRepository.Set(index, entity.Log{
+		Command: "delete " + request.Key,
+		Index:   index,
+		Term:    k.state.GetCurrentTerm(),
+	})
+
+	countAgree := k.raftService.AppendEntriesToAllMembers()
+
+	if countAgree < k.raftService.GetQuorum() { /* if not meet the quorum, reject request */
+		k.logRepository.Set(index, entity.Log{
+			Command: constants.INVALID_COMMAND,
+			Index:   index,
+			Term:    k.state.GetCurrentTerm(),
+		})
+		membersPtr := k.state.GetMembersPtr()
+		for id := range *membersPtr { /* correcting the prev (probably) sent entry*/
+			member := &(*membersPtr)[id]
+			member.NextIndex = min(member.NextIndex, index)
+		}
+
+		return &dtos.ClientDeleteResponse{
+			Success: false,
+		}
+	}
+
+	val, found := k.kvRepository.Get(request.Key)
+	if !found {
+		return &dtos.ClientDeleteResponse{
+			Success: true,
+			Value:   "NOT FOUND",
+		}
+	}
+	k.kvRepository.Delete(request.Key)
+	k.state.SetCommitIndex(max(k.state.GetCommitIndex(), index))
+	return &dtos.ClientDeleteResponse{
+		Success: true,
+		Value:   val,
+	}
+}
+
+func (k *ClientService) Append(request dtos.ClientAppendRequest) (response *dtos.ClientAppendResponse) {
+	if k.state.IsVoting() { /* if election is happening, reject request */
+		utils.LogInfo("[APPEND] Voting is happening")
+		return &dtos.ClientAppendResponse{
+			Success: false,
+		}
+	}
+
+	if k.state.GetRole() != constants.NODE_ROLE_LEADER { /* if not a leader, redirect request */
+		utils.LogInfo("[APPEND] Not a leader")
+		return &dtos.ClientAppendResponse{
+			Success:    false,
+			LeaderPort: k.state.GetMembers()[k.state.GetLeaderId()].Address.Port,
+		}
+	}
+
+	index := k.logRepository.GetNewIndex()
+	k.logRepository.Set(index, entity.Log{
+		Command: "append " + request.Key + " " + request.Value,
+		Index:   index,
+		Term:    k.state.GetCurrentTerm(),
+	})
+
+	countAgree := k.raftService.AppendEntriesToAllMembers()
+
+	if countAgree < k.raftService.GetQuorum() { /* if not meet the quorum, reject request */
+		k.logRepository.Set(index, entity.Log{
+			Command: constants.INVALID_COMMAND,
+			Index:   index,
+			Term:    k.state.GetCurrentTerm(),
+		})
+		membersPtr := k.state.GetMembersPtr()
+		for id := range *membersPtr { /* correcting the prev (probably) sent entry*/
+			member := &(*membersPtr)[id]
+			member.NextIndex = min(member.NextIndex, index)
+		}
+
+		return &dtos.ClientAppendResponse{
+			Success: false,
+		}
+	}
+
+	value, found := k.kvRepository.Get(request.Key)
+	if !found {
+		k.kvRepository.Set(request.Key, request.Value)
+	} else {
+		k.kvRepository.Set(request.Key, value+request.Value)
+	}
+	k.state.SetCommitIndex(max(k.state.GetCommitIndex(), index))
+	return &dtos.ClientAppendResponse{
+		Success: true,
+		Value:   value + request.Value,
+	}
+}
+
+func (k *ClientService) Strln(request dtos.ClientStrlnRequest) (response *dtos.ClientStrlnResponse) {
+	if k.state.IsVoting() { /* if election is happening, reject request */
+		utils.LogInfo("[APPEND] Voting is happening")
+		return &dtos.ClientStrlnResponse{
+			Success: false,
+		}
+	}
+
+	if k.state.GetRole() != constants.NODE_ROLE_LEADER { /* if not a leader, redirect request */
+		utils.LogInfo("[APPEND] Not a leader")
+		return &dtos.ClientStrlnResponse{
+			Success:    false,
+			LeaderPort: k.state.GetMembers()[k.state.GetLeaderId()].Address.Port,
+		}
+	}
+
+	value, found := k.kvRepository.Get(request.Key)
+
+	if !found {
+		return &dtos.ClientStrlnResponse{
+			Length:  0,
+			Success: true,
+		}
+	}
+	length := len(value)
+	return &dtos.ClientStrlnResponse{
+		Length:  length,
+		Success: true,
+	}
+
+}
+
 func (k *ClientService) ReqLog() (response *dtos.ClientRequestLogResponse) {
-	// If election is happening
-	if (k.raftService.state.IsElecting) {
+	if k.state.IsVoting() {
 		return &dtos.ClientRequestLogResponse{
 			Success: false,
 		}
 	}
 
-	// Redirect to leader if node type is follower
-	if (k.raftService.state.Role != constants.NODE_ROLE_LEADER){
+	if k.state.GetRole() != constants.NODE_ROLE_LEADER {
 		fmt.Println("[ERROR] Request accepted by a follower")
 		return &dtos.ClientRequestLogResponse{
-			Value: "",
-			Success: false,
-			LeaderPort: k.raftService.state.Members[k.raftService.state.LeaderId].Address.Port,
+			Value:      "",
+			Success:    false,
+			LeaderPort: k.state.GetMembers()[k.state.GetLeaderId()].Address.Port,
 		}
 	}
 
-	/* Get All Key Value Pairs */
 	var logs []string
-    for _, log := range k.logRepository.GetBuffer() {
-        logs = append(logs, fmt.Sprintf(log.Command))
-    }
-    allValue := strings.Join(logs, ", ")
+	for _, log := range k.logRepository.GetBuffer() {
+		logs = append(logs, fmt.Sprintf(log.Command))
+	}
+	allValue := strings.Join(logs, ", ")
 
 	return &dtos.ClientRequestLogResponse{
-		Value: allValue,
+		Value:   allValue,
 		Success: true,
 	}
 }

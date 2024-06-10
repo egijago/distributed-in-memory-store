@@ -29,9 +29,16 @@ func (s *GrpcHandler) Set(ctx context.Context, req *pb.ClientSetRequest) (*pb.Cl
 	}
 
 	response := s.clientService.Set(request)
+
+	// var message string
+	// if response.Success {
+	// 	message = "Success"
+	// } else {
+	// 	message = "Failed"
+	// }
 	return &pb.ClientSetResponse{
-		Success:    response.Success,
 		LeaderPort: response.LeaderPort,
+		Success:    response.Success,
 	}, nil
 }
 

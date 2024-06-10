@@ -1,12 +1,16 @@
 package repositories
 
+import (
+	"if3230-tubes-williamjeffersonclinton/internal/domain/constants"
+)
+
 type KeyValueRepositoryInterface interface {
 	Set(string, string)
 	Get(string) (string, bool)
 	Delete(string)
 	Append(string, string)
 	Execute(string, string, string)
-	GetBuffer() (map[string]string)
+	GetBuffer() map[string]string
 }
 
 type KeyValueRepository struct {
@@ -17,6 +21,10 @@ func NewKeyValueRepository() *KeyValueRepository {
 	return &KeyValueRepository{
 		buffer: make(map[string]string),
 	}
+}
+
+func (l *KeyValueRepository) GetBuffer() map[string]string {
+	return l.buffer
 }
 
 func (l *KeyValueRepository) Set(key string, value string) {
@@ -51,10 +59,7 @@ func (l *KeyValueRepository) Execute(command, arg1, arg2 string) {
 		l.Delete(arg1)
 	case "append":
 		l.Append(arg1, arg2)
+	case constants.INVALID_COMMAND:
+		return
 	}
 }
-
-func (l *KeyValueRepository) GetBuffer() map[string]string {
-	return l.buffer
-}
-

@@ -12,8 +12,8 @@ help:
 proto: 
 	protoc --go_out=internal/pb --go-grpc_out=internal/pb proto/*.proto --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative 
 
-proto-client: 
-	protoc -I=. proto/client.proto --js_out=import_style=commonjs:./client/generated --grpc-web_out=import_style=commonjs,mode=grpcwebtext:./client/generated
+proto-client:
+	protoc -I=. proto/*.proto --js_out=import_style=commonjs:./client/generated --grpc-web_out=import_style=commonjs,mode=grpcwebtext:./client/generated
 
 run: 
 	go run main.go
@@ -27,21 +27,14 @@ run-server:
 node:
 	go run cmd/main.go --grpc_port=$(GRPC_PORT) --grpc_web_port=$(GRPC_WEB_PORT) $(if $(MASTER_PORT),--master_port=$(MASTER_PORT))
 
-# For development purpose nodes
 node1:
-	go run cmd/main.go --grpc_port=8000 --grpc_web_port=8001
+	go run cmd/main.go --grpc_port=8000 --grpc_web_port=7000 --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 -verbose
 
 node2:
-	go run cmd/main.go --grpc_port=8002 --grpc_web_port=8003 --master_port=8000
+	go run cmd/main.go --grpc_port="8001" --grpc_web_port="7001" --master_port="8000" --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 -verbose
 
 node3:
-	go run cmd/main.go --grpc_port=8004 --grpc_web_port=8005 --master_port=8000
+	go run cmd/main.go --grpc_port="8002" --grpc_web_port="7002" --master_port="8000" --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 -verbose
 
 node4:
-	go run cmd/main.go --grpc_port=8006 --grpc_web_port=8007 --master_port=8000
-
-node5:
-	go run cmd/main.go --grpc_port=8008 --grpc_web_port=8009 --master_port=8000
-
-node6:
-	go run cmd/main.go --grpc_port=8010 --grpc_web_port=8011 --master_port=8000
+	go run cmd/main.go --grpc_port="8003" --grpc_web_port="7003" --master_port="8000" --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 -verbose

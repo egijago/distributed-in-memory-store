@@ -19,6 +19,8 @@ type RaftClientCaller interface {
 	AppendEntries(ctx context.Context, client entities.RaftClient, request dtos.RaftAppendEntriesRequest) (*dtos.RaftAppendEntriesResponse, error)
 	RequestVote(ctx context.Context, client entities.RaftClient, request dtos.RaftRequestVoteRequest) (*dtos.RaftRequestVoteResponse, error)
 	ApplyMembership(ctx context.Context, client entities.RaftClient, request dtos.RaftApplyMembershipRequest) (*dtos.RaftApplyMembershipResponse, error)
+	PrepareAddMember(ctx context.Context, client entities.RaftClient, request dtos.RaftPrepareAddMemberRequest) (*dtos.RaftPrepareAddMemberResponse, error)
+	CommitAddMember(ctx context.Context, client entities.RaftClient, request dtos.RaftCommitAddMemberRequest) (*dtos.RaftCommitAddMemberResponse, error)
 }
 
 func (l *RaftClientCallerImpl) AppendEntries(ctx context.Context, client entities.RaftClient, request dtos.RaftAppendEntriesRequest) (*dtos.RaftAppendEntriesResponse, error) {
@@ -91,3 +93,64 @@ func (l *RaftClientCallerImpl) ApplyMembership(ctx context.Context, client entit
 		Term:    int(response.Term),
 	}, nil
 }
+
+func (l *RaftClientCallerImpl) PrepareAddMember(ctx context.Context, client entities.RaftClient, request dtos.RaftPrepareAddMemberRequest) (*dtos.RaftPrepareAddMemberResponse, error) {
+	response, err := client.ProtoClient.PrepareAddMember(ctx, &pb.RaftPrepareAddMemberRequest{
+		Term:     int32(request.Term),
+		LeaderId: int32(request.LeaderId),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &dtos.RaftPrepareAddMemberResponse{
+		Term:    int(response.Term),
+		Success: response.Success,
+	}, nil
+}
+
+func (l *RaftClientCallerImpl) CommitAddMember(ctx context.Context, client entities.RaftClient, request dtos.RaftCommitAddMemberRequest) (*dtos.RaftCommitAddMemberResponse, error) {
+	response, err := client.ProtoClient.CommitAddMember(ctx, &pb.RaftCommitAddMemberRequest{
+		Term:     int32(request.Term),
+		LeaderId: int32(request.LeaderId),
+		Commit:   request.Commit,
+		Address: &pb.Address{
+			Host: request.Address.Host,
+			Port: request.Address.Port,
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &dtos.RaftCommitAddMemberResponse{
+		Term:    int(response.Term),
+		Success: response.Success,
+	}, nil
+}
+
+// func (r *raftClientCaller) GetAddress() entities.Address {
+// 	return r.raftClient.Address
+// }
+
+// func (r *raftClientCaller) SetAddress(address entities.Address) {
+// 	r.raftClient.Address = address
+// }
+
+// func (r *raftClientCaller) GetNextIndex() int {
+// 	return r.raftClient.NextIndex
+// }
+
+// func (r *raftClientCaller) SetNextIndex(nextIndex int) {
+// 	r.raftClient.NextIndex = nextIndex
+// }
+
+// func (r *raftClientCaller) GetMatchIndex() int {
+// 	return r.raftClient.MatchIndex
+// }
+
+// func (r *raftClientCaller) SetMatchIndex(matchIndex int) {
+// 	r.raftClient.MatchIndex = matchIndex
+// }

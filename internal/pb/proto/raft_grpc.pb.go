@@ -19,9 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RaftService_AppendEntries_FullMethodName   = "/raft.RaftService/AppendEntries"
-	RaftService_RequestVote_FullMethodName     = "/raft.RaftService/RequestVote"
-	RaftService_ApplyMembership_FullMethodName = "/raft.RaftService/ApplyMembership"
+	RaftService_AppendEntries_FullMethodName    = "/raft.RaftService/AppendEntries"
+	RaftService_RequestVote_FullMethodName      = "/raft.RaftService/RequestVote"
+	RaftService_ApplyMembership_FullMethodName  = "/raft.RaftService/ApplyMembership"
+	RaftService_PrepareAddMember_FullMethodName = "/raft.RaftService/PrepareAddMember"
+	RaftService_CommitAddMember_FullMethodName  = "/raft.RaftService/CommitAddMember"
+	RaftService_State_FullMethodName            = "/raft.RaftService/State"
 )
 
 // RaftServiceClient is the client API for RaftService service.
@@ -31,6 +34,9 @@ type RaftServiceClient interface {
 	AppendEntries(ctx context.Context, in *RaftAppendEntriesRequest, opts ...grpc.CallOption) (*RaftAppendEntriesResponse, error)
 	RequestVote(ctx context.Context, in *RaftRequestVoteRequest, opts ...grpc.CallOption) (*RaftRequestVoteResponse, error)
 	ApplyMembership(ctx context.Context, in *RaftApplyMembershipRequest, opts ...grpc.CallOption) (*RaftApplyMembershipResponse, error)
+	PrepareAddMember(ctx context.Context, in *RaftPrepareAddMemberRequest, opts ...grpc.CallOption) (*RaftPrepareAddMemberResponse, error)
+	CommitAddMember(ctx context.Context, in *RaftCommitAddMemberRequest, opts ...grpc.CallOption) (*RaftCommitAddMemberResponse, error)
+	State(ctx context.Context, in *RaftStateRequest, opts ...grpc.CallOption) (*RaftStateResponse, error)
 }
 
 type raftServiceClient struct {
@@ -68,6 +74,33 @@ func (c *raftServiceClient) ApplyMembership(ctx context.Context, in *RaftApplyMe
 	return out, nil
 }
 
+func (c *raftServiceClient) PrepareAddMember(ctx context.Context, in *RaftPrepareAddMemberRequest, opts ...grpc.CallOption) (*RaftPrepareAddMemberResponse, error) {
+	out := new(RaftPrepareAddMemberResponse)
+	err := c.cc.Invoke(ctx, RaftService_PrepareAddMember_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *raftServiceClient) CommitAddMember(ctx context.Context, in *RaftCommitAddMemberRequest, opts ...grpc.CallOption) (*RaftCommitAddMemberResponse, error) {
+	out := new(RaftCommitAddMemberResponse)
+	err := c.cc.Invoke(ctx, RaftService_CommitAddMember_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *raftServiceClient) State(ctx context.Context, in *RaftStateRequest, opts ...grpc.CallOption) (*RaftStateResponse, error) {
+	out := new(RaftStateResponse)
+	err := c.cc.Invoke(ctx, RaftService_State_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RaftServiceServer is the server API for RaftService service.
 // All implementations must embed UnimplementedRaftServiceServer
 // for forward compatibility
@@ -75,6 +108,9 @@ type RaftServiceServer interface {
 	AppendEntries(context.Context, *RaftAppendEntriesRequest) (*RaftAppendEntriesResponse, error)
 	RequestVote(context.Context, *RaftRequestVoteRequest) (*RaftRequestVoteResponse, error)
 	ApplyMembership(context.Context, *RaftApplyMembershipRequest) (*RaftApplyMembershipResponse, error)
+	PrepareAddMember(context.Context, *RaftPrepareAddMemberRequest) (*RaftPrepareAddMemberResponse, error)
+	CommitAddMember(context.Context, *RaftCommitAddMemberRequest) (*RaftCommitAddMemberResponse, error)
+	State(context.Context, *RaftStateRequest) (*RaftStateResponse, error)
 	mustEmbedUnimplementedRaftServiceServer()
 }
 
@@ -90,6 +126,15 @@ func (UnimplementedRaftServiceServer) RequestVote(context.Context, *RaftRequestV
 }
 func (UnimplementedRaftServiceServer) ApplyMembership(context.Context, *RaftApplyMembershipRequest) (*RaftApplyMembershipResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApplyMembership not implemented")
+}
+func (UnimplementedRaftServiceServer) PrepareAddMember(context.Context, *RaftPrepareAddMemberRequest) (*RaftPrepareAddMemberResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PrepareAddMember not implemented")
+}
+func (UnimplementedRaftServiceServer) CommitAddMember(context.Context, *RaftCommitAddMemberRequest) (*RaftCommitAddMemberResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CommitAddMember not implemented")
+}
+func (UnimplementedRaftServiceServer) State(context.Context, *RaftStateRequest) (*RaftStateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method State not implemented")
 }
 func (UnimplementedRaftServiceServer) mustEmbedUnimplementedRaftServiceServer() {}
 
@@ -158,6 +203,60 @@ func _RaftService_ApplyMembership_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RaftService_PrepareAddMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RaftPrepareAddMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftServiceServer).PrepareAddMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RaftService_PrepareAddMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftServiceServer).PrepareAddMember(ctx, req.(*RaftPrepareAddMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RaftService_CommitAddMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RaftCommitAddMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftServiceServer).CommitAddMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RaftService_CommitAddMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftServiceServer).CommitAddMember(ctx, req.(*RaftCommitAddMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RaftService_State_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RaftStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftServiceServer).State(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RaftService_State_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftServiceServer).State(ctx, req.(*RaftStateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RaftService_ServiceDesc is the grpc.ServiceDesc for RaftService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -176,6 +275,18 @@ var RaftService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ApplyMembership",
 			Handler:    _RaftService_ApplyMembership_Handler,
+		},
+		{
+			MethodName: "PrepareAddMember",
+			Handler:    _RaftService_PrepareAddMember_Handler,
+		},
+		{
+			MethodName: "CommitAddMember",
+			Handler:    _RaftService_CommitAddMember_Handler,
+		},
+		{
+			MethodName: "State",
+			Handler:    _RaftService_State_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
