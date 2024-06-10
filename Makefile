@@ -27,14 +27,20 @@ run-server:
 node:
 	go run cmd/main.go --grpc_port=$(GRPC_PORT) --grpc_web_port=$(GRPC_WEB_PORT) $(if $(MASTER_PORT),--master_port=$(MASTER_PORT))
 
+node0:
+	go run cmd/main.go --grpc_port=8000 --master_port="8003" --grpc_web_port=7000 --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 
+
 node1:
-	go run cmd/main.go --grpc_port=8000 --grpc_web_port=7000 --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 -verbose
+	go run cmd/main.go --grpc_port="8001" --grpc_web_port="7001" --master_port="8000" --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 
 
 node2:
-	go run cmd/main.go --grpc_port="8001" --grpc_web_port="7001" --master_port="8000" --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 -verbose
+	go run cmd/main.go --grpc_port="8002" --grpc_web_port="7002" --master_port="8000" --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 
 
 node3:
-	go run cmd/main.go --grpc_port="8002" --grpc_web_port="7002" --master_port="8000" --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 -verbose
+	go run cmd/main.go --grpc_port="8003" --grpc_web_port="7003" --master_port="8000" --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 
 
 node4:
-	go run cmd/main.go --grpc_port="8003" --grpc_web_port="7003" --master_port="8000" --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 -verbose
+	go run cmd/main.go --grpc_port="8004" --grpc_web_port="7004" --master_port="8000" --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 
+
+node5:
+	go run cmd/main.go --grpc_port="8005" --grpc_web_port="7005" --master_port="8000" --et=1000 --hi=2000 --hrto=2000 --ht=4000 --hts=2000 

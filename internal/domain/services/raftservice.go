@@ -91,6 +91,10 @@ func NewRaftFollowerService(state entities.StateInterface, kvRepository reposito
 	if err != nil {
 		utils.LogErrorf("[CREATE RAFT] failed to apply membership: %v", err)
 	}
+	if !response.Success {
+		utils.LogError("[CREATE RAFT] failed to apply membership, wrong master address")
+	}
+
 	utils.LogInfo("[CREATE RAFT] membership granted from ", masterAddress.String())
 
 	utils.Print("Current members: ")
@@ -102,7 +106,10 @@ func NewRaftFollowerService(state entities.StateInterface, kvRepository reposito
 
 	utils.Print("\n")
 	service.state.SetId(response.Id)
-	go service.startHeartbeatListener()
+	defer func() {
+		utils.LogInfo("[CREATE RAFT] Start listening to heartbeat")
+		go service.startHeartbeatListener()
+	}()
 	return service
 }
 
@@ -431,10 +438,12 @@ func (k *RaftService) ApplyMembership(request dtos.RaftApplyMembershipRequest) (
 	}
 
 	exist := false
-	for id := range *k.state.GetMembersPtr() {
-		member := &(*k.state.GetMembersPtr())[id]
+	members := *k.state.GetMembersPtr()
+	for id := range members {
+		member := &members[id]
 		if member.Address.Host == request.Address.Host && member.Address.Port == request.Address.Port {
-			member.NextIndex = constants.INVALID_ID
+			// Update the member with the pointer returned by NewRaftClient
+			*member = *entities.NewRaftClient(request.Address)
 			exist = true
 			break
 		}
