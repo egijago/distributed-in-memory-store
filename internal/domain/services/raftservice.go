@@ -159,16 +159,12 @@ func (k *RaftService) PrepareAddMember(request dtos.RaftPrepareAddMemberRequest)
 	utils.LogInfof("[PREPAREMEM] getting prepare add member request")
 	success := k.state.LockMembers()
 	k.preparing = success
-	// if success {
-	// 	time.AfterFunc(k.state.GetTwoPCTimeout(), func() {
-	// 		if k.preparing {
-	// 			k.state.UnlockMembers()
-	// 			k.preparing = false
-	// 		}
-	// 	})
-	// }
 	if !success {
 		utils.LogInfo("[PREPAREMEM] Failed to lock members")
+		return &dtos.RaftPrepareAddMemberResponse{
+			Term:    k.state.GetCurrentTerm(),
+			Success: false,
+		}
 	}
 
 	if k.state.GetRole() != constants.NODE_ROLE_FOLLOWER {
@@ -297,30 +293,12 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 	/* Append new entries */
 	for _, newLog := range request.Entries {
 		k.logRepository.Set(newLog.Index, newLog)
-		// if !(idx == newLog.Index) {
-		// 	utils.LogError("[APPEND] Aborted: log replication failed (index mismatch)")
-		// }
-		if !(newLog.Term == request.Term) {
+		if (newLog.Term != request.Term) && (newLog.Index > request.LeaderCommit) { /* Getting uncommited log from previous term */
 			utils.LogError("[APPEND] Aborted: log replication failed (term mismatch)")
 		}
 	}
 
-	// /* If an existing entry conflicts with a new one (same index but different terms), delete the existing entry and all that follow it */
-	// for _, newLog := range request.Entries {
-	// 	existingLog, indexExists := k.logRepository.Get(newLog.Index)
-	// 	if indexExists {
-	// 		/*	Conflict detected: same index but different term */
-	// 		if existingLog.Term != newLog.Term {
-	// 			/* Delete all log following it */
-	// 			k.logRepository.DeleteLogsStartFrom(newLog.Index)
-	// 			/* Append new log */
-	// 			k.logRepository.Append(newLog)
-	// 		}
-	// 	} else {
-	// 		k.logRepository.Append(newLog)
-	// 	}
-	// }
-
+	/* If an existing entry conflicts with a new one (same index but different terms), delete the existing entry and all that follow it */
 	isSorted := true
 	for i := 1; i < len(request.Entries); i++ {
 		if request.Entries[i-1].Index > request.Entries[i].Index {
@@ -337,7 +315,7 @@ func (k *RaftService) AppendEntries(request dtos.RaftAppendEntriesRequest) (resp
 		/* Execute every command from commitIndex + 1 to leaderCommit index */
 		for i := k.state.GetCommitIndex() + 1; i <= request.LeaderCommit; i++ {
 			log, found := k.logRepository.Get(i)
-			if (log.Term != request.Term) || (!found) {
+			if !found {
 				continue
 			}
 			if log.Command == constants.INVALID_COMMAND {
@@ -652,7 +630,7 @@ func (k *RaftService) appendEntriesToAllMembers() int {
 
 		utils.LogInfo("[HEARTBEAT] Sending heartbeat to ", member.Address.String(), "...")
 
-		entries := k.logRepository.GetLogsWhere(k.state.GetCurrentTerm(), member.NextIndex)
+		entries := k.logRepository.GetLogsWhere(k.state.GetCurrentTerm(), member.NextIndex, k.state.GetCommitIndex())
 		isSorted := true
 		for i := 1; i < len(entries); i++ {
 			if entries[i-1].Index > entries[i].Index {

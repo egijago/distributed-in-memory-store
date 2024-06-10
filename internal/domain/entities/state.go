@@ -145,14 +145,6 @@ func (k *State) UnlockMembers() {
 	k.memberMutex.Unlock()
 }
 
-// 	k.memberMutex.LockWithTimeout(k.TwoPCTimeout)
-// 	return true
-// }
-
-// func (k *State) UnlockMembers() {
-// 	k.memberMutex.Unlock()
-// }
-
 func (k *State) GetMembers() []RaftClient {
 	k.memberMutex.Lock()
 	defer k.memberMutex.Unlock()

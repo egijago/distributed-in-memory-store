@@ -20,7 +20,7 @@ type LogRepositoryInterface interface {
 	GetLogs() []entities.Log
 	GetNewIndex() int
 	GetLogsFromTerm(int) []entities.Log
-	GetLogsWhere(int, int) []entities.Log
+	GetLogsWhere(int, int, int) []entities.Log
 }
 
 type LogRepository struct {
@@ -130,13 +130,17 @@ func (l *LogRepository) DeleteLogsRange(startIndex int, endIndex int) {
 	}
 }
 
-func (l *LogRepository) GetLogsWhere(term, startIdx int) []entities.Log {
+func (l *LogRepository) GetLogsWhere(term, startIdx, commit int) []entities.Log {
 	var logs []entities.Log
 
 	for id := startIdx; id <= l.lastIndex; id++ {
 		log, exists := l.buffer[id]
-		if exists && log.Term == term {
-			logs = append(logs, log)
+		if exists {
+			if log.Term == term { /* Current term */
+				logs = append(logs, log)
+			} else if log.Term < term && log.Index <= commit { /* Prev term but already commited */
+				logs = append(logs, log)
+			}
 		}
 	}
 	return logs

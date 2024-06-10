@@ -131,26 +131,3 @@ func (l *RaftClientCallerImpl) CommitAddMember(ctx context.Context, client entit
 	}, nil
 }
 
-// func (r *raftClientCaller) GetAddress() entities.Address {
-// 	return r.raftClient.Address
-// }
-
-// func (r *raftClientCaller) SetAddress(address entities.Address) {
-// 	r.raftClient.Address = address
-// }
-
-// func (r *raftClientCaller) GetNextIndex() int {
-// 	return r.raftClient.NextIndex
-// }
-
-// func (r *raftClientCaller) SetNextIndex(nextIndex int) {
-// 	r.raftClient.NextIndex = nextIndex
-// }
-
-// func (r *raftClientCaller) GetMatchIndex() int {
-// 	return r.raftClient.MatchIndex
-// }
-
-// func (r *raftClientCaller) SetMatchIndex(matchIndex int) {
-// 	r.raftClient.MatchIndex = matchIndex
-// }

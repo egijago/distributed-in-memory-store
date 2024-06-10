@@ -28,35 +28,3 @@ func NewRaftClient(address Address) *RaftClient {
 		MatchIndex:  0,
 	}
 }
-
-// func (r *RaftClient) SetMatchIndex(index int) {
-// 	r.MatchIndex = index
-// }
-
-// func (r *RaftClient) SetNextIndex(index int) {
-// 	r.NextIndex = index
-// }
-
-// func (r *RaftClient) GetMatchIndex() int {
-// 	return r.MatchIndex
-// }
-
-// func (r *RaftClient) GetNextIndex() int {
-// 	return r.NextIndex
-// }
-
-// func (r *RaftClient) GetAddress() Address {
-// 	return r.Address
-// }
-
-// func (r *RaftClient) SetAddress(address Address) {
-// 	r.Address = address
-// }
-
-// func (r *RaftClient) GetProtoClient() pb.RaftServiceClient {
-// 	return r.ProtoClient
-// }
-
-// func (r *RaftClient) SetProtoClient(client pb.RaftServiceClient) {
-// 	r.ProtoClient = client
-// }
