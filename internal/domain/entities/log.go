@@ -22,3 +22,4 @@ func (l *Log) Parse() (string, string, string) {
 
 	return command, arg1, arg2
 }
+

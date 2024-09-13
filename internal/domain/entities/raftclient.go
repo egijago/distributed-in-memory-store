@@ -1,9 +1,9 @@
 package entities
 
 import (
-	"if3230-tubes-williamjeffersonclinton/internal/domain/constants"
-	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
 	"log"
+
+	pb "if3230-tubes-williamjeffersonclinton/internal/pb/proto"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -24,7 +24,7 @@ func NewRaftClient(address Address) *RaftClient {
 	return &RaftClient{
 		Address:     address,
 		ProtoClient: pb.NewRaftServiceClient(conn),
-		NextIndex:   constants.INVALID_ID,
-		MatchIndex:  constants.INVALID_ID,
+		NextIndex:   0,
+		MatchIndex:  0,
 	}
 }

@@ -4,6 +4,7 @@ option go_package = "proto.pb";
 
 package client;
 
+
 service ClientService {
     rpc Ping(ClientPingRequest) returns (ClientPingResponse);
     rpc Get(ClientGetRequest) returns (ClientGetResponse);

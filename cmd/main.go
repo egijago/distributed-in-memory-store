@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"time"
+
 	"if3230-tubes-williamjeffersonclinton/internal/domain/entities"
 	repository "if3230-tubes-williamjeffersonclinton/internal/domain/repositories"
 	"if3230-tubes-williamjeffersonclinton/internal/domain/services"
@@ -23,23 +26,46 @@ func requestLogger(ctx context.Context, req interface{}, info *grpc.UnaryServerI
 	p, ok := peer.FromContext(ctx)
 	if ok {
 		addr := p.Addr
-		log.Printf("Received request: %s from %s with local addr %s", info.FullMethod, addr.String(), p.LocalAddr.String())
+		log.Printf("Received request: %s from %s", info.FullMethod, addr.String())
 	} else {
 		log.Printf("Received request: %s", info.FullMethod)
 	}
 
 	resp, err := handler(ctx, req)
 	return resp, err
-
 }
 
+func stateLogger(state entities.StateInterface) {
+	jsonState, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		log.Fatalf("failed to marshal state: %v", err)
+	}
+	log.Println("[STATE]", string(jsonState))
+}
 
 func main() {
 	/* Parse argument(s) */
+	host := flag.String("host", "localhost", "Hotname")
 	grpcPort := flag.String("grpc_port", "", "gRPC port")
-	masterPort := flag.String("master_port", "", "Master port")
 	grpcWebPort := flag.String("grpc_web_port", "", "gRPC-web port")
+	masterHost := flag.String("master_host", "localhost", "Master host")
+	masterPort := flag.String("master_port", "", "Master port")
+
+	electionTimeout := flag.Int("et", 0, "Election timeout")
+	heartbeatInterval := flag.Int("hi", 0, "Heartbeat interval")
+	heartbeatRequestTimeout := flag.Int("hrto", 0, "Heartbeat request timeout")
+	heartbeatTimeout := flag.Int("ht", 0, "Heartbeat timeout")
+	heartbeatTimeoutSlack := flag.Int("hts", 0, "Heartbeat timeout slack")
+	quorumScale := flag.Float64("qs", 0.5, "Quorum scale (0.0 - 1.0)")
+	twoPCTimeout := flag.Int("tpct", 1000, "Two phase commit timeout")
+
+	verbose := flag.Bool("verbose", false, "Verbose mode")
+
 	flag.Parse()
+
+	if *heartbeatRequestTimeout == 0 {
+		*heartbeatRequestTimeout = *heartbeatInterval / 2
+	}
 
 	if *grpcPort == "" {
 		log.Fatal("grpc_port is required")
@@ -56,23 +82,48 @@ func main() {
 
 	kvRepository := repository.NewKeyValueRepository()
 	logRepository := repository.NewLogRepository()
-	
+
 	var raftService *services.RaftService = nil
 
 	state := entities.NewState(
-		*entities.NewAddress("localhost", *grpcPort),
-		3000,
-		3000,
+		*entities.NewAddress(*host, *grpcPort),
+		*electionTimeout,
+		*heartbeatInterval,
+		*heartbeatRequestTimeout,
+		*heartbeatTimeout,
+		*heartbeatTimeoutSlack,
+		*twoPCTimeout,
 	)
 
-	if *masterPort == "" {
-		self := entities.NewRaftClient(*entities.NewAddress("localhost", *grpcPort))
-		state.Members = append(state.Members, *self)
-		raftService = services.NewRaftLeaderService(*state, kvRepository, logRepository)
-	} else {
-		raftService = services.NewRaftFollowerService(*state, kvRepository, logRepository, entities.Address{Host: "localhost", Port: *masterPort})
+	if *verbose {
+		log.Println("Verbose mode enabled")
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+		done := make(chan bool)
+
+		go func() {
+			for {
+				select {
+				case <-done:
+					return
+				case <-ticker.C:
+					stateLogger(state)
+				}
+			}
+		}()
 	}
-	clientService := services.NewClientService(kvRepository, logRepository, raftService)
+
+	if *masterPort == "" {
+		raftService = services.NewRaftLeaderService(state, kvRepository, logRepository, *quorumScale)
+	} else {
+		raftService = services.NewRaftFollowerService(state, kvRepository, logRepository, entities.Address{Host: *masterHost, Port: *masterPort}, *quorumScale)
+	}
+	clientService := services.NewClientService(state, kvRepository, logRepository, raftService)
+
+	a, b := raftService.Get()
+
+	log.Println(a)
+	log.Println(b)
 
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(requestLogger),
@@ -103,4 +154,5 @@ func main() {
 	if err := httpServer.ListenAndServe(); err != nil {
 		log.Fatalf("failed to serve gRPC-Web: %v", err)
 	}
+
 }

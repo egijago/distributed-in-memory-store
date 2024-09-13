@@ -13,14 +13,6 @@ type RaftAppendEntriesRequest struct {
 	LeaderCommit int
 }
 
-type RaftForceCommitRequest struct {
-	Index int
-}
-
-type RaftForceCommitResponse struct {
-	Success bool
-}
-
 type RaftAppendEntriesResponse struct {
 	Term    int
 	Success bool
@@ -45,4 +37,33 @@ type RaftApplyMembershipResponse struct {
 	Members []entities.Address
 	Term    int
 	Success bool
+}
+
+type RaftPrepareAddMemberRequest struct {
+	Term     int
+	LeaderId int
+}
+
+type RaftPrepareAddMemberResponse struct {
+	Term    int
+	Success bool
+}
+
+type RaftCommitAddMemberRequest struct {
+	Term     int
+	LeaderId int
+	Commit   bool
+	Address  entities.Address
+}
+
+type RaftCommitAddMemberResponse struct {
+	Term    int
+	Success bool
+}
+
+type RaftStateRequest struct {
+}
+
+type RaftStateResponse struct {
+	State []string
 }
